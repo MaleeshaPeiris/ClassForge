@@ -1,0 +1,9 @@
+flask
+pandas
+torch
+networkx
+matplotlib
+numpy
+boto3
+
+
