@@ -5,5 +5,7 @@ networkx
 matplotlib
 numpy
 boto3
+torch
+torch-geometric
 
 
