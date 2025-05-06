@@ -1,15 +1,21 @@
-from app import db
+from sqlalchemy import Column, Integer, Float, String
+from sqlalchemy.ext.declarative import declarative_base
 
-class Student(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    grade = db.Column(db.String(20))
-    wellbeing_score = db.Column(db.Float)
+Base = declarative_base()
 
-    def serialize(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "grade": self.grade,
-            "wellbeing_score": self.wellbeing_score
-        }
+class Student(Base):
+    __tablename__ = 'students'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    motivation_level = Column(Float)
+    peer_influence_positive = Column(Float)
+    peer_influence_negative = Column(Float)
+    attendance = Column(Float)
+    parental_involvement = Column(Float)
+    sleep_hours = Column(Float)
+    extracurricular_activities = Column(Float)
+    tutoring_sessions = Column(Float)
+    internet_access = Column(Float)
+    school_type_private = Column(Integer)  # 1 or 0
+    exam_score = Column(Float)  # Optional for evaluation
