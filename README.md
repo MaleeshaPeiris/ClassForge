@@ -1,2 +1,1 @@
-# ClassForge
-AI driven classroom allocation system
+# ClassForge-AI-Powered-Customizable-Classroom-Allocation-System-for-Schools
