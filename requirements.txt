@@ -7,5 +7,6 @@ numpy
 boto3
 torch
 torch-geometric
+scikit-learn
 
 
