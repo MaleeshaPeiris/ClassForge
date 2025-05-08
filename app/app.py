@@ -1,7 +1,6 @@
 from flask import Flask, request, render_template, jsonify
 import pandas as pd
 import torch
-import boto3
 from utils import process_csvfile, train_model_from_csv, GAT
 
 app = Flask(__name__)
@@ -35,7 +34,6 @@ def allocate_students():
 
 
 current_model = None
-
 
 
 if __name__ == '__main__':
