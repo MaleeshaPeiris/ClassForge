@@ -1,0 +1,22 @@
+<!-- app/templates/upload_csv.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Upload CSV</title>
+</head>
+<body>
+    <h1>Upload Student CSV</h1>
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".csv" required>
+        <button type="submit">Upload and Process</button>
+    </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <p style="color: {% if category == 'success' %}green{% else %}red{% endif %};">
+          {{ message }}
+        </p>
+      {% endfor %}
+    {% endwith %}
+</body>
+</html>
