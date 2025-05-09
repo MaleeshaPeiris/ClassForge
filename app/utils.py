@@ -27,9 +27,8 @@ class GAT(torch.nn.Module):
 
 
 def train_model_from_csv(df, num_classes,criterion):
-    data, _ = process_datasetfile(df, num_classes)
-    model = GAT(in_channels=5, hidden_channels=8, out_channels=num_classes)
-    print(num_classes)
+    data, _ = process_datasetfile(df, num_classes,criterion)
+    model = GAT(in_channels=4, hidden_channels=8, out_channels=num_classes)
     optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
 
 
@@ -58,13 +57,17 @@ def train_model_from_csv(df, num_classes,criterion):
     torch.save(model.state_dict(), "model.pth")
     return model
 
-def process_datasetfile(df, num_classes):
+def process_datasetfile(df, num_classes, criterion):
     # Normalize numerical features for similarity calculation
     scaler = MinMaxScaler()
-    numerical_features = df[["SES", "achievement", "psychological_distress","wellbeing","gender_code"]]
+    if criterion == 'achievement':
+        numerical_features = df[["SES", "achievement" ,"psychological_distress","gender_code"]]
+
+    elif criterion == 'wellbeing':
+        numerical_features = df[["SES", "wellbeing" ,"psychological_distress","gender_code"]]
+
     normalized_features = scaler.fit_transform(numerical_features)
     normalized_features = pd.DataFrame(normalized_features)
-
     scaler = MinMaxScaler()
     X_processed = scaler.fit_transform(normalized_features)
 
@@ -128,7 +131,7 @@ def process_datasetfile(df, num_classes):
     df["eigenvector_centrality"] = df.index.map(eigenvector_centrality)
 
     # Step 1: Sort by achievement
-    df_sorted = df.sort_values("achievement", ascending=False).reset_index(drop=True)
+    df_sorted = df.sort_values(criterion, ascending=False).reset_index(drop=True)
 
     n = len(df)
     top_10 = df_sorted.iloc[:int(0.3 * n)].copy()
@@ -138,25 +141,25 @@ def process_datasetfile(df, num_classes):
     selected_students = pd.concat([top_10, bottom_10]).reset_index(drop=True)
 
     # Step 3: Assign them evenly to 5 classes
-    selected_students["academic_semi_label"] = np.tile(np.arange(num_classes), len(selected_students) // num_classes + 1)[:len(selected_students)]
+    selected_students["semi_label"] = np.tile(np.arange(num_classes), len(selected_students) // num_classes + 1)[:len(selected_students)]
     selected_students = selected_students.sample(frac=1, random_state=42).reset_index(drop=True)  # shuffle
 
     # Step 4: Initialize all as -1 (unlabeled)
-    df["academic_semi_label"] = -1
+    df["semi_label"] = -1
 
     # Step 5: Apply labels to selected students
     # Match by a unique column like 'student_id'
-    df.loc[df["student_id"].isin(selected_students["student_id"]), "academic_semi_label"] = selected_students["academic_semi_label"].values
+    df.loc[df["student_id"].isin(selected_students["student_id"]), "semi_label"] = selected_students["semi_label"].values
 
     # Combine all features and semi-labels
     combined_features = pd.concat([
         pd.DataFrame(normalized_features),
-        df[['student_id','academic_semi_label']]
+        df[['student_id','semi_label']]
     ], axis=1)
 
     #combined_features.to_csv("normalized_data_with_labels.csv", index = False)
-    features = combined_features.iloc[:, :5].values
-    labels = combined_features['academic_semi_label'].values  # Shape: (200,)
+    features = combined_features.iloc[:, :4].values
+    labels = combined_features['semi_label'].values  # Shape: (200,)
     print(labels)
     # Combine all features
     labels_df = pd.concat([
@@ -201,7 +204,7 @@ def process_datasetfile(df, num_classes):
     
     return data, df
 
-def process_csvfile(df):
+def process_csvfile(df,criterion):
     # Normalize numerical features for similarity calculation
     scaler = MinMaxScaler()
     numerical_features = df[["SES", "achievement", "psychological_distress","wellbeing","gender_code"]]
@@ -258,7 +261,13 @@ def process_csvfile(df):
     # === Create graph from adjacency matrix ===
     G = nx.from_numpy_array(adj_matrix)
     
-    features = df.iloc[:, :5].values
+    if criterion == 'achievement':
+        df = df.drop('wellbeing', axis=1)
+
+    elif criterion == 'wellbeing':
+        df = df.drop('achievement', axis=1)
+
+    features = df.iloc[:, :4].values
     # === 3. Initialize All Nodes ===
     for i, node in enumerate(G.nodes()):
         G.nodes[node]['x'] = torch.tensor(features[i], dtype=torch.float)
