@@ -28,7 +28,7 @@ def allocate_students():
     with torch.no_grad():
         out = current_model(data.x, data.edge_index)
         df['allocated_class'] = torch.argmax(out, dim=1).tolist()
-    return  jsonify(df[['student_id','allocated_class']].to_dict(orient='records'))
+    return  jsonify(df.to_dict(orient='records'))
 
 
 current_model = None

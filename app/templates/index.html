@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Student Allocator</title>
+    <title>Class Allocation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .student-list { margin-top: 20px; }
+    </style>
 </head>
 <body>
     <h2>Class Forge - Student Allocator</h2>
@@ -25,7 +30,12 @@
         <button type="submit">Allocate</button>
     </form>
 
-    <div id="output"></div>
+    <div id="output">
+        <h3>Class Allocation Chart</h3>
+        <canvas id="chart"></canvas>
+    </div>
+
+    <div class="student-list" id="student-details"></div>
 
     <script src="/static/script.js"></script>
 </body>
