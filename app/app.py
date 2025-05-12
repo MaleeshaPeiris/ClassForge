@@ -2,6 +2,8 @@ from flask import Flask, request, render_template, jsonify
 import pandas as pd
 import torch
 from utils import process_csvfile, train_model_from_csv, GAT
+from sklearn.cluster import KMeans
+
 
 app = Flask(__name__)
 
@@ -22,11 +24,7 @@ def allocate_students():
     num_classes = int(request.form['num_classes'])
     global current_model
     current_model = train_model_from_csv(train_dataset_df,num_classes,criterion) 
-    data = process_csvfile(df)
-    print(data.x.shape)           # Should be [num_nodes, num_features]
-    print(data.edge_index.shape)
-    #data.x = torch.tensor(data.x, dtype=torch.float)
-    #data.edge_index = torch.tensor(data.edge_index, dtype=torch.long)
+    data = process_csvfile(df, criterion)
     with torch.no_grad():
         out = current_model(data.x, data.edge_index)
         df['allocated_class'] = torch.argmax(out, dim=1).tolist()
