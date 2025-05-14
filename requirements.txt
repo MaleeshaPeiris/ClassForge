@@ -8,5 +8,6 @@ boto3
 torch
 torch-geometric
 scikit-learn
+pyvis
 
 

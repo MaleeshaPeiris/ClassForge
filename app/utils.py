@@ -26,14 +26,14 @@ class GAT(torch.nn.Module):
         return self.gat2(x, edge_index)
 
 
-def train_model_from_csv(df, num_classes,criterion):
-    data, _ = process_datasetfile(df, num_classes,criterion)
-    model = GAT(in_channels=4, hidden_channels=8, out_channels=num_classes)
-    optimizer = optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+def train_model_from_csv(df, num_classes, academic_weight,wellbeing_weight):
+    data, _ = process_datasetfile(df, num_classes, academic_weight,wellbeing_weight)
+    model = GAT(in_channels=data.x.shape[1], hidden_channels=16, out_channels=num_classes)
+    optimizer = optim.Adam(model.parameters(), lr=0.005, weight_decay=5e-4)
 
 
     # === 9. Train and Save ===
-    for epoch in range(1, 201):
+    for epoch in range(1, 401):
         model.train()
         optimizer.zero_grad()
         out = model(data.x, data.edge_index)
@@ -57,122 +57,49 @@ def train_model_from_csv(df, num_classes,criterion):
     torch.save(model.state_dict(), "model.pth")
     return model
 
-def process_datasetfile(df, num_classes, criterion):
-    # Normalize numerical features for similarity calculation
+def process_datasetfile(df, num_classes, academic_weight,wellbeing_weight):
+
     scaler = MinMaxScaler()
-    if criterion == 'achievement':
-        numerical_features = df[["SES", "achievement" ,"psychological_distress","gender_code"]]
+    all_features = df.loc[:, df.columns != 'student_id']
+    all_norm_features = scaler.fit_transform(all_features)
+    X_processed = pd.DataFrame(all_norm_features)
+  
+    G = create_graph(df)
+    df_labeled = label_students(df,num_classes)
 
-    elif criterion == 'wellbeing':
-        numerical_features = df[["SES", "wellbeing" ,"psychological_distress","gender_code"]]
+    print(academic_weight,wellbeing_weight)
 
-    normalized_features = scaler.fit_transform(numerical_features)
-    normalized_features = pd.DataFrame(normalized_features)
-    scaler = MinMaxScaler()
-    X_processed = scaler.fit_transform(normalized_features)
+    if academic_weight == 100 and wellbeing_weight == 0:
+        X_processed = X_processed.iloc[:, 2:7]
 
-    # === Step 4: Find optimal number of clusters using silhouette score ===
-    silhouette_scores = []
-    K_range = range(2, 10)  # Try 2 to 9 clusters
+    if academic_weight == 80 and wellbeing_weight == 20:
+        X_processed = X_processed.iloc[:, :5]
 
-    for k in K_range:
-        kmeans = KMeans(n_clusters=k, random_state=42)
-        labels = kmeans.fit_predict(X_processed)
-        score = silhouette_score(X_processed, labels)
-        silhouette_scores.append(score)
+    if academic_weight == 60 and wellbeing_weight == 40:
+        X_processed = X_processed.iloc[:, :5]
 
-    # === Step 5: Choose best k based on max silhouette score ===
-    best_k = K_range[np.argmax(silhouette_scores)]
-    #print(f"Best number of blocks (clusters): {best_k}")
+    if academic_weight == 40 and wellbeing_weight == 60:
+        X_processed = X_processed.iloc[:, :5]
 
-    # === Step 6: Final clustering with best_k ===
-    final_kmeans = KMeans(n_clusters=best_k, random_state=42)
-    df['block'] = final_kmeans.fit_predict(X_processed)
+    if academic_weight == 20 and wellbeing_weight == 80:
+        X_processed = X_processed.iloc[:, :5]
 
+    if academic_weight == 0 and wellbeing_weight == 100:
+        X_processed = X_processed.iloc[:, 7:]
 
+    features = X_processed.values
+    labels = df_labeled['label'].values
 
-
-    block_labels = df['block'].values
-    n = len(df)
-    k = 4  # number of blocks
-    P = np.array([[0.8, 0.2, 0.1, 0.1],
-                [0.2, 0.7, 0.2, 0.1],
-                [0.1, 0.2, 0.6, 0.3],
-                [0.1, 0.1, 0.3, 0.5]])
-    
-    # === Organize students into blocks ===
-    blocks = [np.where(block_labels == i)[0] for i in range(k)]
-    #block_sizes = [len(b) for b in blocks]
-    #print(block_sizes)
-
-    # === Generate adjacency matrix based on SBM ===
-    adj_matrix = np.zeros((n, n))
-
-    for i in range(k):
-        for j in range(k):
-            for u in blocks[i]:
-                for v in blocks[j]:
-                    if u < v:  # only fill upper triangle (undirected graph)
-                        if np.random.rand() < P[i, j]:
-                            adj_matrix[u, v] = 1
-                            adj_matrix[v, u] = 1
-
-    # === Create graph from adjacency matrix ===
-    G = nx.from_numpy_array(adj_matrix)
-
-    degree_centrality = nx.degree_centrality(G)
-    betweenness_centrality = nx.betweenness_centrality(G)
-    closeness_centrality = nx.closeness_centrality(G)
-    eigenvector_centrality = nx.eigenvector_centrality(G)
-
-    df["degree_centrality"] = df.index.map(degree_centrality)
-    df["betweenness_centrality"] = df.index.map(betweenness_centrality)
-    df["closeness_centrality"] = df.index.map(closeness_centrality)
-    df["eigenvector_centrality"] = df.index.map(eigenvector_centrality)
-
-    # Step 1: Sort by achievement
-    df_sorted = df.sort_values(criterion, ascending=False).reset_index(drop=True)
-
-    n = len(df)
-    top_10 = df_sorted.iloc[:int(0.3 * n)].copy()
-    bottom_10 = df_sorted.iloc[-int(0.3 * n):].copy()
-
-    # Step 2: Combine top and bottom
-    selected_students = pd.concat([top_10, bottom_10]).reset_index(drop=True)
-
-    # Step 3: Assign them evenly to 5 classes
-    selected_students["semi_label"] = np.tile(np.arange(num_classes), len(selected_students) // num_classes + 1)[:len(selected_students)]
-    selected_students = selected_students.sample(frac=1, random_state=42).reset_index(drop=True)  # shuffle
-
-    # Step 4: Initialize all as -1 (unlabeled)
-    df["semi_label"] = -1
-
-    # Step 5: Apply labels to selected students
-    # Match by a unique column like 'student_id'
-    df.loc[df["student_id"].isin(selected_students["student_id"]), "semi_label"] = selected_students["semi_label"].values
-
-    # Combine all features and semi-labels
-    combined_features = pd.concat([
-        pd.DataFrame(normalized_features),
-        df[['student_id','semi_label']]
-    ], axis=1)
-
-    #combined_features.to_csv("normalized_data_with_labels.csv", index = False)
-    features = combined_features.iloc[:, :4].values
-    labels = combined_features['semi_label'].values  # Shape: (200,)
-    print(labels)
-    # Combine all features
     labels_df = pd.concat([
         pd.DataFrame(labels),
-        combined_features['student_id']
+        df['student_id']
     ], axis=1)
     labels_df.columns = ['label','node_id']
 
-    # === 3. Initialize All Nodes ===
+    # === Initialize All Nodes ===
     for i, node in enumerate(G.nodes()):
         G.nodes[node]['x'] = torch.tensor(features[i], dtype=torch.float)
         G.nodes[node]['y'] = -1  # -1 means "unlabeled"
-
 
     # Set labels only for known ones
     for _, row in labels_df.iterrows():
@@ -180,23 +107,35 @@ def process_datasetfile(df, num_classes, criterion):
         if node_id in G.nodes:
             G.nodes[node_id]['y'] = int(row['label'])
         else:
-            print(f"Node {node_id} not found in graph.")   
+            print(f"Node {node_id} not found in graph.")  
 
-    # === 4. Convert to PyG Data ===
+    # ===  Convert to PyG Data ===
     data = from_networkx(G)
     data.x = torch.stack([data.x[i] for i in range(data.num_nodes)])
     data.y = torch.tensor([data.y[i] for i in range(data.num_nodes)], dtype=torch.long)
 
-    # === 5. Create train/val/test masks ===
+    # ===  Create train/val/test masks ===
     train_mask = (data.y != -1)  # Only use labeled nodes for training
     val_mask = torch.zeros_like(train_mask)
     test_mask = torch.zeros_like(train_mask)
 
-    # You can randomly split labeled nodes for val/test:
+        # You can randomly split labeled nodes for val/test:
     labeled_indices = train_mask.nonzero(as_tuple=False).view(-1)
-    val_mask[labeled_indices[:30]] = True
-    test_mask[labeled_indices[30:60]] = True
-    train_mask[val_mask | test_mask] = False  # Remove from training
+    num_labeled = labeled_indices.size(0)
+
+    # Compute split sizes
+    num_train = int(0.8 * num_labeled)
+    num_val = int(0.1 * num_labeled)
+
+    # Assign masks
+    train_mask = torch.zeros_like(train_mask)
+    val_mask = torch.zeros_like(val_mask)
+    test_mask = torch.zeros_like(test_mask)
+
+    train_mask[labeled_indices[:num_train]] = True
+    val_mask[labeled_indices[num_train:num_train + num_val]] = True
+    test_mask[labeled_indices[num_train + num_val:]] = True
+
 
     data.train_mask = train_mask
     data.val_mask = val_mask
@@ -204,17 +143,72 @@ def process_datasetfile(df, num_classes, criterion):
     
     return data, df
 
-def process_csvfile(df,criterion):
-    # Normalize numerical features for similarity calculation
+
+def process_csvfile(df, academic_weight,wellbeing_weight):
     scaler = MinMaxScaler()
-    numerical_features = df[["SES", "achievement", "psychological_distress","wellbeing","gender_code"]]
-    normalized_features = scaler.fit_transform(numerical_features)
-    normalized_features = pd.DataFrame(normalized_features)
+    all_features = df.loc[:, df.columns != 'student_id']
+    all_norm_features = scaler.fit_transform(all_features)
+    X_processed = pd.DataFrame(all_norm_features)
+
+    G = create_graph(df)
+
+    if academic_weight == 100 and wellbeing_weight == 0:
+        X_processed = X_processed.iloc[:, 2:7]
+
+    if academic_weight == 80 and wellbeing_weight == 20:
+        X_processed = X_processed.iloc[:, :5]
+
+    if academic_weight == 60 and wellbeing_weight == 40:
+        X_processed = X_processed.iloc[:, :5]
+
+    if academic_weight == 40 and wellbeing_weight == 60:
+        X_processed = X_processed.iloc[:, :5]
+
+    if academic_weight == 20 and wellbeing_weight == 80:
+        X_processed = X_processed.iloc[:, :5]
+
+    if academic_weight == 0 and wellbeing_weight == 100:
+        X_processed = X_processed.iloc[:, 7:]
+
+
+    features = X_processed.values
+    # === 3. Initialize All Nodes ===
+    for i, node in enumerate(G.nodes()):
+        G.nodes[node]['x'] = torch.tensor(features[i], dtype=torch.float)
+
+    data = from_networkx(G)
+
+    return data, G 
+
+
+
+def label_students(df, num_classes):
+
+    num_samples = len(df)
+    samples_per_class = num_samples // num_classes
+    
+    # Create labels with equal distribution
+    labels = np.tile(np.arange(num_classes), samples_per_class)
+    
+    # Handle any remainder by randomly adding a few extra labels (optional)
+    remainder = num_samples - len(labels)
+    if remainder > 0:
+        extra_labels = np.random.choice(np.arange(num_classes), remainder, replace=False)
+        labels = np.concatenate([labels, extra_labels])
+    
+    np.random.shuffle(labels)
+    df['label'] = labels
+
+    return df
+
+def create_graph(df):
 
     scaler = MinMaxScaler()
-    X_processed = scaler.fit_transform(normalized_features)
+    all_features = df.loc[:, df.columns != 'student_id']
+    all_norm_features = scaler.fit_transform(all_features)
+    X_processed = pd.DataFrame(all_norm_features)
 
-    # === Step 4: Find optimal number of clusters using silhouette score ===
+   # === Find optimal number of clusters using silhouette score ===
     silhouette_scores = []
     K_range = range(2, 10)  # Try 2 to 9 clusters
 
@@ -224,14 +218,13 @@ def process_csvfile(df,criterion):
         score = silhouette_score(X_processed, labels)
         silhouette_scores.append(score)
 
-    # === Step 5: Choose best k based on max silhouette score ===
+    # === Choose best k based on max silhouette score ===
     best_k = K_range[np.argmax(silhouette_scores)]
-    #print(f"Best number of blocks (clusters): {best_k}")
+    print(f"Best number of blocks (clusters): {best_k}")
 
-    # === Step 6: Final clustering with best_k ===
+    # === Final clustering with best_k ===
     final_kmeans = KMeans(n_clusters=best_k, random_state=42)
     df['block'] = final_kmeans.fit_predict(X_processed)
-
 
     block_labels = df['block'].values
     n = len(df)
@@ -240,11 +233,9 @@ def process_csvfile(df,criterion):
                 [0.2, 0.7, 0.2, 0.1],
                 [0.1, 0.2, 0.6, 0.3],
                 [0.1, 0.1, 0.3, 0.5]])
-    
+
     # === Organize students into blocks ===
     blocks = [np.where(block_labels == i)[0] for i in range(k)]
-    #block_sizes = [len(b) for b in blocks]
-    #print(block_sizes)
 
     # === Generate adjacency matrix based on SBM ===
     adj_matrix = np.zeros((n, n))
@@ -260,18 +251,6 @@ def process_csvfile(df,criterion):
 
     # === Create graph from adjacency matrix ===
     G = nx.from_numpy_array(adj_matrix)
-    
-    if criterion == 'achievement':
-        df = df.drop('wellbeing', axis=1)
 
-    elif criterion == 'wellbeing':
-        df = df.drop('achievement', axis=1)
+    return G
 
-    features = df.iloc[:, :4].values
-    # === 3. Initialize All Nodes ===
-    for i, node in enumerate(G.nodes()):
-        G.nodes[node]['x'] = torch.tensor(features[i], dtype=torch.float)
-
-    data = from_networkx(G)
-
-    return data  

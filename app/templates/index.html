@@ -1,43 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Class Allocation</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
+        .chart-container {
+            display: flex;
+            flex-direction: row;        /* Aligns items horizontally */
+            justify-content: center;    /* Center align if container is wider */
+            gap: 40px;                  /* Space between the images */
+            flex-wrap: wrap;            /* Allows wrapping on smaller screens */
+            margin-top: 20px;  
+        }
+
+        .chart-container canvas {
+            max-width: 45%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+            
+
+        
+        canvas {
+            width: 100%;
+            max-width: 500px;
+            height: 300px;
+        }
+
         .student-list { margin-top: 20px; }
+        .graph-container {
+            display: flex;
+            flex-direction: row;        /* Aligns items horizontally */
+            justify-content: center;    /* Center align if container is wider */
+            gap: 20px;                  /* Space between the images */
+            flex-wrap: wrap;            /* Allows wrapping on smaller screens */
+            margin-top: 20px;
+        }
+
+        .graph-container img {
+            max-width: 45%;
+            height: auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
     <h2>Class Forge - Student Allocator</h2>
     <h3>Upload Student Data</h3>
-    <p>01. Upload a CSV file with student data. The file should contain the following columns: Student ID, SES, wellbeing, psychological_distress, gender and academic score.</p>
+    <p>01. Upload a CSV file with student data. The file should contain the following columns: Student ID, SES, wellbeing, psychological_distress, gender and academic scores.</p>
     <p>02. Select the criterion to allocate students</p>
     <p>03. Select the number of classes to allocate students into</p>
-    <p>04. Click on the "Allocate" button to start the allocation process</p>
-    <p>05. The results will be displayed below</p>
+    <p>04. Choose how much of each feature type (Academic & Well-being) you want to use for training</p>
+    <p>05. Click on the "Allocate" button to start the allocation process</p>
+    <p>06. The results will be displayed below</p>
 
-
-    <form id="upload-form">
+    <form id="upload-form" method="post" enctype="multipart/form-data">
         <input type="file" name="file" required><br><br>
-        <label>Criterion:</label>
-        <select name="criterion">
-            <option value="achievement">Academic</option>
-            <option value="wellbeing">Well-being</option>
-        </select><br><br>
+
         <label>Number of Classes:</label>
-        <input type="number" name="num_classes" value="3"><br><br>
+        <input type="number" name="num_classes" value="3" min="1" required><br><br>
+
+        <label>Academic Feature Percentage: <span id="academic-label">100%</span></label><br>
+        <input type="range" id="academic-weight" name="academic_weight" min="0" max="100" step="20" value="100" oninput="adjustWeights('academic')"><br><br>
+        
+        <label>Well-being Feature Percentage: <span id="wellbeing-label">0%</span></label><br>
+        <input type="range" id="wellbeing-weight" name="wellbeing_weight" min="0" max="100" step="20" value="0" oninput="adjustWeights('wellbeing')"><br><br>
+
         <button type="submit">Allocate</button>
     </form>
 
     <div id="output">
-        <h3>Class Allocation Chart</h3>
-        <canvas id="chart"></canvas>
+        <h3>Class Allocation Charts</h3>
+        <div class="chart-container">
+            <canvas id="chart1"></canvas>
+            <canvas id="chart2"></canvas>
+        </div>
+        <h3>Student Similarity Graph</h3>
+        <div class="graph-container">
+            <img id="graph-image" src=""  />
+            <img id="graph-image2" src="" />
+        </div>
+        <a href="/interactive_graph" target="_blank" class="btn btn-primary" style="margin-top: 10px;">
+            View Interactive Graph
+        </a>
     </div>
 
     <div class="student-list" id="student-details"></div>
 
+    <script>
+        function updateLabel(type) {
+            const slider = document.getElementById(`${type}-weight`);
+            const label = document.getElementById(`${type}-label`);
+            label.innerText = `${slider.value}%`;
+        }
+    </script>
+    <script>
+        function adjustWeights(changed) {
+            const academicSlider = document.getElementById('academic-weight');
+            const wellbeingSlider = document.getElementById('wellbeing-weight');
+            const academicLabel = document.getElementById('academic-label');
+            const wellbeingLabel = document.getElementById('wellbeing-label');
+        
+            let academicVal = parseInt(academicSlider.value);
+            let wellbeingVal = parseInt(wellbeingSlider.value);
+        
+            if (changed === 'academic') {
+                academicVal = Math.min(100, academicVal);
+                wellbeingVal = 100 - academicVal;
+                wellbeingSlider.value = wellbeingVal;
+            } else {
+                wellbeingVal = Math.min(100, wellbeingVal);
+                academicVal = 100 - wellbeingVal;
+                academicSlider.value = academicVal;
+            }
+        
+            academicLabel.textContent = academicVal + '%';
+            wellbeingLabel.textContent = wellbeingVal + '%';
+        }
+        </script>
+
     <script src="/static/script.js"></script>
 </body>
 </html>
- 
