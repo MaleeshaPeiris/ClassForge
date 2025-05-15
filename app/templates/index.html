@@ -59,27 +59,32 @@
         <label class="form-label">Well-being Feature Percentage: <span id="wellbeing-label">0%</span></label><br>
         <input type="range" class="form-range" id="wellbeing-weight" name="wellbeing_weight" min="0" max="100" step="20" value="0" oninput="adjustWeights('wellbeing')"><br><br>
 
-        <button type="submit" class="btn btn-primary mt-3">Allocate</button> <br><br>
+        <button id="allocateBtn" class="btn btn-primary mt-3">Allocate</button> <br><br>
     </form>
-
-    <div id="output">
-        <h3 class="text-center mb-4">Full Class Graph Representation - Our Model Vs random Allocation</h3>
+    <div id="resultDiv" class="mt-4" > 
+        <div id="output">
+            <h3 class="text-center mb-4">Full Class Graph Representation - Our Model Vs random Allocation</h3>
+            <div class="graph-container">
+                <img id="graph-image" src=""   />
+                <img id="graph-image2" src="" />
+            </div>
+        </div><br>
+        <h3 class="text-center mb-4">Class Comparison</h3>
+    
+        <select class="form-select w-auto" id="class-selector">
+            <option disabled selected>Select Class Number</option>
+        </select>
         <div class="graph-container">
-            <img id="graph-image" src="" width="600"  />
-            <img id="graph-image2" src="" width="600"/>
-        </div>
-    </div><br>
-    <h3 class="text-center mb-4">Class Comparison</h3>
+            <img id="class-graph-image" src=""  />
+            <img id="class-graph-image-random" src=""  />
+        </div> 
+        <div class="text-center mt-4">
+            <a href="/download_csv" class="btn btn-primary mt-3" download>
+                Download Student Data
+            </a>
+        </div>         
+    </div>
 
-    <select class="form-select w-auto" id="class-selector">
-        <option disabled selected>Select Class Number</option>
-    </select>
-    <div class="graph-container">
-        <img id="class-graph-image" src="" width="600" />
-        <img id="class-graph-image-random" src="" width="600" />
-    </div> 
-
-      
 
 
     <script>

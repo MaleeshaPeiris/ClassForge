@@ -331,6 +331,8 @@ def optimize_class_allocation(df, num_class, max_gender_dev=2, max_bully_dev=1):
             if pulp.value(x[i][j]) == 1:
                 assigned_class = j
                 break
+        if assigned_class is None:
+            np.random.randint(0, num_class)
         optimal_classes.append(assigned_class)
 
     df = df.copy()
