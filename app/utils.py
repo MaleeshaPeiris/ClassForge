@@ -10,6 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from torch_geometric.utils import from_networkx
+import pulp
 
 
 
@@ -25,7 +26,6 @@ class GAT(torch.nn.Module):
         x = F.dropout(x, p=0.6, training=self.training)
         return self.gat2(x, edge_index)
 
-
 def train_model_from_csv(df, num_classes, academic_weight,wellbeing_weight):
     data, _ = process_datasetfile(df, num_classes, academic_weight,wellbeing_weight)
     model = GAT(in_channels=data.x.shape[1], hidden_channels=16, out_channels=num_classes)
@@ -33,7 +33,7 @@ def train_model_from_csv(df, num_classes, academic_weight,wellbeing_weight):
 
 
     # === 9. Train and Save ===
-    for epoch in range(1, 401):
+    for epoch in range(1, 101):
         model.train()
         optimizer.zero_grad()
         out = model(data.x, data.edge_index)
@@ -217,7 +217,7 @@ def create_graph(df):
 
     # === Choose best k based on max silhouette score ===
     best_k = K_range[np.argmax(silhouette_scores)]
-    print(f"Best number of blocks (clusters): {best_k}")
+    print(f"Best number of blocks (clusters) for stochastic block model: {best_k}")
 
     # === Final clustering with best_k ===
     final_kmeans = KMeans(n_clusters=best_k, random_state=42)
@@ -268,7 +268,6 @@ def create_graph(df):
 
     # Get top 10% influencer nodes
     top_influencers = [node for node, score in sorted_nodes[:top_n]]
-    print(f"Top {top_n} influencers: {top_influencers}")
 
     # Mark them in the graph
     for node in G.nodes():
@@ -276,3 +275,64 @@ def create_graph(df):
 
     return G
 
+def optimize_class_allocation(df, num_class, max_gender_dev=2, max_bully_dev=1):
+
+    n_students = len(df)
+
+    # Derive model output score matrix from model_class (one-hot encoding for now)
+    model_class = df['allocated_class'].to_numpy()
+    model_output = np.zeros((n_students, num_class))
+    model_output[np.arange(n_students), model_class] = 1  
+
+    gender = df['gender_code'].to_numpy()
+    bully = df['bullying_experience_flag'].to_numpy()
+
+    students_per_class = n_students // num_class
+    total_males = np.sum(gender)
+    total_bullies = np.sum(bully)
+
+    prob = pulp.LpProblem("ClassAllocation", pulp.LpMinimize)
+
+    x = [[pulp.LpVariable(f"x_{i}_{j}", cat="Binary") for j in range(num_class)] for i in range(n_students)]
+
+    # Objective: minimize deviation from model allocation
+    prob += pulp.lpSum((1 - model_output[i][j]) * x[i][j] for i in range(n_students) for j in range(num_class))
+
+    # Constraint: each student in exactly one class
+    for i in range(n_students):
+        prob += pulp.lpSum(x[i][j] for j in range(num_class)) == 1
+
+    # Constraint: equal class sizes
+    for j in range(num_class):
+        prob += pulp.lpSum(x[i][j] for i in range(n_students)) == students_per_class
+
+    # Constraint: gender balance
+    ideal_males = total_males / num_class
+    for j in range(num_class):
+        male_count = pulp.lpSum(gender[i] * x[i][j] for i in range(n_students))
+        prob += male_count >= ideal_males - max_gender_dev
+        prob += male_count <= ideal_males + max_gender_dev
+
+    # Constraint: bully distribution balance
+    ideal_bullies = total_bullies / num_class
+    for j in range(num_class):
+        bully_count = pulp.lpSum(bully[i] * x[i][j] for i in range(n_students))
+        prob += bully_count >= ideal_bullies - max_bully_dev
+        prob += bully_count <= ideal_bullies + max_bully_dev
+
+    # Solve the problem
+    prob.solve()
+
+    # Assign optimal class
+    optimal_classes = []
+    for i in range(n_students):
+        assigned_class = None
+        for j in range(num_class):
+            if pulp.value(x[i][j]) == 1:
+                assigned_class = j
+                break
+        optimal_classes.append(assigned_class)
+
+    df = df.copy()
+    df['optimal_class'] = optimal_classes
+    return df

@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template, jsonify, redirect
 import pandas as pd
 import torch
-from utils import process_csvfile, train_model_from_csv, GAT
+from utils import process_csvfile, train_model_from_csv, GAT, optimize_class_allocation
 from sklearn.cluster import KMeans
 import numpy as np
 import matplotlib.pyplot as plt
@@ -58,18 +58,19 @@ def allocate_students():
     with torch.no_grad():
         out = current_model(data.x, data.edge_index)
         df['allocated_class'] = torch.argmax(out, dim=1).tolist() 
-        print("Allocated classes:", df['allocated_class'].unique())
-        print(df)
         df['random_label'] = np.random.randint(0, num_classes, size=len(df))
+
+    df = optimize_class_allocation(df, num_classes)
 
     for i in range(len(df)):
         G.nodes[i]['random_label'] = df.loc[i, 'random_label']
         G.nodes[i]['allocated_class'] = df.loc[i, 'allocated_class']
+        G.nodes[i]['optimal_class'] = df.loc[i, 'optimal_class']
         G.nodes[i]['gender_code'] = df.loc[i, 'gender_code']
 
     url1 = graph_image()
     url2 = graph_image2()
-    unique_allocated_classes = sorted(int(c) for c in df['allocated_class'].unique())
+    unique_allocated_classes = sorted(int(c) for c in df['optimal_class'].unique())
     unique_random_allocated_classes = sorted(int(c) for c in df['random_label'].unique())
 
     return jsonify({
@@ -87,13 +88,13 @@ def graph_image():
         return jsonify({"error": "No graph available. Please upload and allocate first."}), 400
 
     # Get number of unique classes
-    allocated_classes = [data['allocated_class'] for _, data in G.nodes(data=True)]
+    allocated_classes = [data['optimal_class'] for _, data in G.nodes(data=True)]
     unique_classes = sorted(set(allocated_classes))
     class_to_color = {cls: i for i, cls in enumerate(unique_classes)}
 
     # Use a colormap
     cmap = cm.get_cmap('tab10', len(unique_classes))
-    color_map = [cmap(class_to_color[G.nodes[n]['allocated_class']]) for n in G.nodes]
+    color_map = [cmap(class_to_color[G.nodes[n]['optimal_class']]) for n in G.nodes]
 
     fig, ax = plt.subplots(figsize=(10, 8))
     pos = nx.spring_layout(G, seed=42)
@@ -187,8 +188,7 @@ def class_graph(class_id):
         # Example: Borders for influencers
         legend_elements.append(mlines.Line2D([], [], color='red', marker='o', linestyle='None',
                                             markersize=10, label='Influencer', markerfacecolor='white', markeredgewidth=2))
-        legend_elements.append(mlines.Line2D([], [], color='black', marker='o', linestyle='None',
-                                            markersize=10, label='Non-influencer', markerfacecolor='white', markeredgewidth=2))
+
 
         # Add the legend
         ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=2, frameon=False)
@@ -204,7 +204,7 @@ def class_graph(class_id):
         response_data["random_graph_url"] = None
 
     # Check and create allocated_class graph
-    nodes_allocated = [n for n, d in G.nodes(data=True) if d.get('allocated_class') == class_id]
+    nodes_allocated = [n for n, d in G.nodes(data=True) if d.get('optimal_class') == class_id]
     if nodes_allocated:
         subG_allocated = G.subgraph(nodes_allocated)
 
@@ -240,9 +240,8 @@ def class_graph(class_id):
 
         # Example: Borders for influencers
         legend_elements.append(mlines.Line2D([], [], color='red', marker='o', linestyle='None',
-                                            markersize=10, label='Influencer', markerfacecolor='white', markeredgewidth=2))
-        legend_elements.append(mlines.Line2D([], [], color='black', marker='o', linestyle='None',
-                                            markersize=10, label='Non-influencer', markerfacecolor='white', markeredgewidth=2))
+                                            markersize=10, label='Influencer', markerfacecolor='white', markeredgewidth=2)) 
+
 
         # Add the legend
         ax2.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=2, frameon=False)
