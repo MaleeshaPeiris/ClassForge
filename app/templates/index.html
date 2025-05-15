@@ -2,34 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Class Allocation</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Student Allocation System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .chart-container {
-            display: flex;
-            flex-direction: row;        /* Aligns items horizontally */
-            justify-content: center;    /* Center align if container is wider */
-            gap: 40px;                  /* Space between the images */
-            flex-wrap: wrap;            /* Allows wrapping on smaller screens */
-            margin-top: 20px;  
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f6f9;
         }
-
-        .chart-container canvas {
-            max-width: 45%;
-            height: auto;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-            
-
-        
-        canvas {
-            width: 100%;
-            max-width: 500px;
-            height: 300px;
-        }
+        .card {
+            border-radius: 16px;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
+        }  
 
         .student-list { margin-top: 20px; }
         .graph-container {
@@ -49,36 +35,44 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
     </style>
+
 </head>
 <body>
-    <h2>Class Forge - Student Allocator</h2>
-    <h3>Upload Student Data</h3>
+<div class="container py-5">
+
+    <h2 class="text-center mb-4">Class Forge - Student Allocator</h2>
+    <h3 class="text-left mb-1">Upload Student Data</h3>
 
     <form id="upload-form" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" required><br><br>
+        <input type="file" class="form-control w-75" name="file" required><br><br>
 
-        <label>Number of Classes:</label>
-        <input type="number" name="num_classes" value="3" min="1" required><br><br>
+        <h3 class="text-left mb-1">Enter required number of classes</h3>
 
-        <label>Academic Feature Percentage: <span id="academic-label">100%</span></label><br>
-        <input type="range" id="academic-weight" name="academic_weight" min="0" max="100" step="20" value="100" oninput="adjustWeights('academic')"><br><br>
+        <label class="form-label">Number of Classes:</label>
+        <input type="number" class="form-control w-25" name="num_classes" value="3" min="1" required><br><br>
+
+        <h3 class="text-left mb-1">Select the Academic Weight and Well-being Weight</h3>
+
+        <label class="form-label">Academic Feature Percentage: <span id="academic-label">100%</span></label><br>
+        <input type="range" class="form-range" id="academic-weight" name="academic_weight" min="0" max="100" step="20" value="100" oninput="adjustWeights('academic')"><br><br>
         
-        <label>Well-being Feature Percentage: <span id="wellbeing-label">0%</span></label><br>
-        <input type="range" id="wellbeing-weight" name="wellbeing_weight" min="0" max="100" step="20" value="0" oninput="adjustWeights('wellbeing')"><br><br>
+        <label class="form-label">Well-being Feature Percentage: <span id="wellbeing-label">0%</span></label><br>
+        <input type="range" class="form-range" id="wellbeing-weight" name="wellbeing_weight" min="0" max="100" step="20" value="0" oninput="adjustWeights('wellbeing')"><br><br>
 
-        <button type="submit">Allocate</button>
+        <button type="submit" class="btn btn-primary mt-3">Allocate</button> <br><br>
     </form>
 
     <div id="output">
-        <h3>Student Similarity Graph</h3>
+        <h3 class="text-center mb-4">Full Class Graph Representation - Our Model Vs random Allocation</h3>
         <div class="graph-container">
-            <img id="graph-image" src=""  />
-            <img id="graph-image2" src="" />
+            <img id="graph-image" src="" width="600"  />
+            <img id="graph-image2" src="" width="600"/>
         </div>
-    </div>
+    </div><br>
+    <h3 class="text-center mb-4">Class Comparison</h3>
 
-    <select id="class-selector">
-        <option disabled selected>Select a class to compare</option>
+    <select class="form-select w-auto" id="class-selector">
+        <option disabled selected>Select Class Number</option>
     </select>
     <div class="graph-container">
         <img id="class-graph-image" src="" width="600" />
@@ -119,7 +113,8 @@
             wellbeingLabel.textContent = wellbeingVal + '%';
         }
         </script>
+</div>
+<script src="/static/script.js"></script>
 
-    <script src="/static/script.js"></script>
 </body>
 </html>
