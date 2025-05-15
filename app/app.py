@@ -5,6 +5,8 @@ from utils import process_csvfile, train_model_from_csv, GAT
 from sklearn.cluster import KMeans
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import matplotlib.lines as mlines
 import io
 from flask import send_file, url_for
 import networkx as nx
@@ -79,52 +81,6 @@ def allocate_students():
     })
 
 
-""" @app.route('/interactive_graph')
-def interactive_graph():
-    global G
-    if G is None:
-        return "No graph available. Please allocate students first.", 400
-    
-    for n, data in G.nodes(data=True):
-        for key in data:
-            val = data[key]
-            if isinstance(val, torch.Tensor):
-                if val.numel() == 1:
-                    data[key] = val.item()  # Convert 1-element tensor to scalar
-                else:
-                    data[key] = val.tolist()  
-            elif isinstance(val, (np.integer, np.int64, np.int32)):
-                data[key] = int(val)
-            elif isinstance(val, (np.floating, np.float32, np.float64)):
-                data[key] = float(val)
-            elif isinstance(val, np.bool_):
-                data[key] = bool(val)
-
-    # Create a Pyvis network
-    net = Network('600px', '50%', bgcolor="#222222", font_color="white")
-    # Create a Pyvis network for random allocation
-    net = Network('600px', '50%', bgcolor="#222222", font_color="white")
-
-    # Disable physics (this keeps the nodes from floating around)
-    net.show_buttons(filter_=['physics'])
-
-    # Convert NetworkX graph to Pyvis network
-    net.from_nx(G)
-
-    # Optional: color nodes by class
-    for node in net.nodes:
-        cls = G.nodes[node['id']].get('allocated_class', None)
-        if cls is not None:
-            node['color'] = f"hsl({(cls * 40) % 360}, 80%, 60%)"
-
-    # Save to file
-    graph_path = os.path.join("static", "interactive_graph.html")
-    net.save_graph(graph_path)
-
-    # Return the path (you can redirect or use this in frontend)
-    return redirect(url_for('static', filename='interactive_graph.html')) """
-
-
 def graph_image():
     global G
     if G is None:
@@ -197,10 +153,49 @@ def class_graph(class_id):
     nodes_random = [n for n, d in G.nodes(data=True) if d.get('random_label') == class_id]
     if nodes_random:
         subG_random = G.subgraph(nodes_random)
+
+        node_colors = []
+        node_border_colors = []
+        for n in subG_random.nodes():
+            data = subG_random.nodes[n]
+            
+            # Gender color
+            if data.get('gender_code') == 0:
+                color = 'lightblue'
+            elif data.get('gender_code') == 1:
+                color = 'lightpink'
+            else:
+                color = 'gray'
+            node_colors.append(color)
+
+            # Border color: red = influencer, white = isolated, black = normal
+            if data.get('is_influencer'):
+                border = 'red'
+            else:
+                border = (0, 0, 0, 0) 
+            node_border_colors.append(border)
+
         fig1, ax1 = plt.subplots(figsize=(8, 6))
         pos_random = nx.spring_layout(subG_random, seed=42)
+        # Create legend patches
+        legend_elements = []
+
+        # Example: Colors for gender
+        legend_elements.append(mpatches.Patch(color='skyblue', label='Male'))
+        legend_elements.append(mpatches.Patch(color='pink', label='Female'))
+
+        # Example: Borders for influencers
+        legend_elements.append(mlines.Line2D([], [], color='red', marker='o', linestyle='None',
+                                            markersize=10, label='Influencer', markerfacecolor='white', markeredgewidth=2))
+        legend_elements.append(mlines.Line2D([], [], color='black', marker='o', linestyle='None',
+                                            markersize=10, label='Non-influencer', markerfacecolor='white', markeredgewidth=2))
+
+        # Add the legend
+        ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=2, frameon=False)
+
+
         nx.draw(subG_random, pos_random, with_labels=True, node_size=60, edge_color='gray',
-                node_color='skyblue', ax=ax1)
+                node_color=node_colors, edgecolors=node_border_colors,ax=ax1, linewidths=3)
         image_path_random = f'static/images/class_{class_id}_random_graph.png'
         plt.savefig(image_path_random)
         plt.close(fig1)
@@ -212,10 +207,48 @@ def class_graph(class_id):
     nodes_allocated = [n for n, d in G.nodes(data=True) if d.get('allocated_class') == class_id]
     if nodes_allocated:
         subG_allocated = G.subgraph(nodes_allocated)
+
+        node_colors = []
+        for n in subG_allocated.nodes():
+            data = subG_allocated.nodes[n]
+            
+            # Gender color
+            if data.get('gender_code') == 0:
+                color = 'lightblue'
+            elif data.get('gender_code') == 1:
+                color = 'lightpink'
+            else:
+                color = 'gray'
+            node_colors.append(color)
+
+            # Border color: red = influencer, white = isolated, black = normal
+            if data.get('is_influencer'):
+                border = 'red'
+            else:
+                border = (0, 0, 0, 0) 
+            node_border_colors.append(border)
+
         fig2, ax2 = plt.subplots(figsize=(8, 6))
         pos_allocated = nx.spring_layout(subG_allocated, seed=42)
+
+       # Create legend patches
+        legend_elements = []
+
+        # Example: Colors for gender
+        legend_elements.append(mpatches.Patch(color='skyblue', label='Male'))
+        legend_elements.append(mpatches.Patch(color='pink', label='Female'))
+
+        # Example: Borders for influencers
+        legend_elements.append(mlines.Line2D([], [], color='red', marker='o', linestyle='None',
+                                            markersize=10, label='Influencer', markerfacecolor='white', markeredgewidth=2))
+        legend_elements.append(mlines.Line2D([], [], color='black', marker='o', linestyle='None',
+                                            markersize=10, label='Non-influencer', markerfacecolor='white', markeredgewidth=2))
+
+        # Add the legend
+        ax2.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=2, frameon=False)
+
         nx.draw(subG_allocated, pos_allocated, with_labels=True, node_size=60, edge_color='gray',
-                node_color='lightgreen', ax=ax2)
+                node_color=node_colors, edgecolors=node_border_colors, ax=ax2,linewidths=3)
         image_path_allocated = f'static/images/class_{class_id}_allocated_graph.png'
         plt.savefig(image_path_allocated)
         plt.close(fig2)
