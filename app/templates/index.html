@@ -53,12 +53,6 @@
 <body>
     <h2>Class Forge - Student Allocator</h2>
     <h3>Upload Student Data</h3>
-    <p>01. Upload a CSV file with student data. The file should contain the following columns: Student ID, SES, wellbeing, psychological_distress, gender and academic scores.</p>
-    <p>02. Select the criterion to allocate students</p>
-    <p>03. Select the number of classes to allocate students into</p>
-    <p>04. Choose how much of each feature type (Academic & Well-being) you want to use for training</p>
-    <p>05. Click on the "Allocate" button to start the allocation process</p>
-    <p>06. The results will be displayed below</p>
 
     <form id="upload-form" method="post" enctype="multipart/form-data">
         <input type="file" name="file" required><br><br>
@@ -76,22 +70,23 @@
     </form>
 
     <div id="output">
-        <h3>Class Allocation Charts</h3>
-        <div class="chart-container">
-            <canvas id="chart1"></canvas>
-            <canvas id="chart2"></canvas>
-        </div>
         <h3>Student Similarity Graph</h3>
         <div class="graph-container">
             <img id="graph-image" src=""  />
             <img id="graph-image2" src="" />
         </div>
-        <a href="/interactive_graph" target="_blank" class="btn btn-primary" style="margin-top: 10px;">
-            View Interactive Graph
-        </a>
     </div>
 
-    <div class="student-list" id="student-details"></div>
+    <select id="class-selector">
+        <option disabled selected>Select a class to compare</option>
+    </select>
+    <div class="graph-container">
+        <img id="class-graph-image" src="" width="600" />
+        <img id="class-graph-image-random" src="" width="600" />
+    </div> 
+
+      
+
 
     <script>
         function updateLabel(type) {

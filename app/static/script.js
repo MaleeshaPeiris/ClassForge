@@ -31,64 +31,23 @@ document.addEventListener("DOMContentLoaded", () => {
         const graph2URL = data.graph_image2_url; 
         const output = document.getElementById("output");
 
-
-        // Count students per class
-        const classCounts = {};
-        students.forEach(s => {
-            const cls = s.random_label;
-            classCounts[cls] = (classCounts[cls] || 0) + 1;
+        // Dynamically populate class dropdown
+        const selector = document.getElementById("class-selector");
+        selector.innerHTML = ""; // Clear old options
+        data.unique_classes_random_allocated.forEach(classId => {
+            const option = document.createElement("option");
+            option.value = classId;
+            option.textContent = `Class ${classId}`;
+            selector.appendChild(option);
         });
 
-        const classLabels = Object.keys(classCounts);
-        const classValues = Object.values(classCounts);
 
-        // Clear previous charts
-        if (window.barChart1) window.barChart1.destroy();
-        if (window.barChart2) window.barChart2.destroy();
-
-        // Chart data setup (same for both)
-        const barData = {
-            labels: classLabels,
-            datasets: [{
-                label: "Students per Class",
-                data: classValues,
-                backgroundColor: "rgba(54, 162, 235, 0.5)",
-                borderColor: "rgba(54, 162, 235, 1)",
-                borderWidth: 1
-            }]
-        };
-
-        // Chart options (same unless you want to customize)
-        const barOptions = {
-            onClick: (event, elements) => {
-                if (elements.length > 0) {
-                    const index = elements[0].index;
-                    const classClicked = classLabels[index];
-                    const filtered = students.filter(s => s.allocated_class == classClicked);
-
-                    const detailDiv = document.getElementById("student-details");
-                    detailDiv.innerHTML = `<h3>Class ${classClicked} - Students</h3><pre>${JSON.stringify(filtered, null, 2)}</pre>`;
-                }
-            },
-            scales: {
-                y: { beginAtZero: true }
-            }
-        };
-
-        // Chart 1
-        const ctx1 = document.getElementById("chart1").getContext("2d");
-        window.barChart1 = new Chart(ctx1, {
-            type: "bar",
-            data: barData,
-            options: barOptions
-        });
-
-        // Chart 2 (duplicate)
-        const ctx2 = document.getElementById("chart2").getContext("2d");
-        window.barChart2 = new Chart(ctx2, {
-            type: "bar",
-            data: barData,
-            options: barOptions
+        document.getElementById("class-selector").addEventListener("change", async function () {
+            const classId = this.value;
+            const response = await fetch(`/class_graph/${classId}`);
+            const data = await response.json();
+            document.getElementById("class-graph-image").src = data.allocated_graph_url + `?t=${new Date().getTime()}`;
+            document.getElementById("class-graph-image-random").src = data.random_graph_url + `?t=${new Date().getTime()}`;
         });
         
         document.getElementById("graph-image").src = `${graph1URL}?t=${new Date().getTime()}`;
