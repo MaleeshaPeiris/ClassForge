@@ -25,10 +25,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+
         const data = await response.json();
         const students = data.students;
         const graph1URL = data.graph_image_url;
         const graph2URL = data.graph_image2_url; 
+
         const output = document.getElementById("output");
 
         // Dynamically populate class dropdown
@@ -49,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("class-graph-image").src = data.allocated_graph_url + `?t=${new Date().getTime()}`;
             document.getElementById("class-graph-image-random").src = data.random_graph_url + `?t=${new Date().getTime()}`;
         });
+
         
         document.getElementById("graph-image").src = `${graph1URL}?t=${new Date().getTime()}`;
         document.getElementById("graph-image2").src = `${graph2URL}?t=${new Date().getTime()}`;

@@ -17,7 +17,7 @@ import os
 
 app = Flask(__name__)
 G = None  # Global variable to store the graph
-
+final_df = None  # Global variable to store the final DataFrame
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -26,6 +26,7 @@ def index():
 @app.route('/allocate', methods=['POST'])
 def allocate_students():
     global G
+    global final_df
     if 'file' not in request.files:
         return "No file uploaded", 400
 
@@ -61,7 +62,7 @@ def allocate_students():
         df['random_label'] = np.random.randint(0, num_classes, size=len(df))
 
     df = optimize_class_allocation(df, num_classes)
-
+    final_df = df.copy()
     for i in range(len(df)):
         G.nodes[i]['random_label'] = df.loc[i, 'random_label']
         G.nodes[i]['allocated_class'] = df.loc[i, 'allocated_class']
@@ -70,7 +71,7 @@ def allocate_students():
 
     url1 = graph_image()
     url2 = graph_image2()
-    unique_allocated_classes = sorted(int(c) for c in df['optimal_class'].unique())
+    unique_allocated_classes = sorted(int(c) for c in df['optimal_class'].unique() if pd.notna(c))
     unique_random_allocated_classes = sorted(int(c) for c in df['random_label'].unique())
 
     return jsonify({
@@ -80,6 +81,21 @@ def allocate_students():
         "unique_classes_allocated": unique_allocated_classes,
         "unique_classes_random_allocated": unique_random_allocated_classes
     })
+
+@app.route('/download_csv')
+def download_csv():
+    global final_df  # Assuming df contains random_label and optimal_class
+
+    columns_to_drop = ['block', 'allocated_class']
+    df_filtered = final_df.drop(columns=columns_to_drop, errors='ignore')
+
+    output = io.StringIO()
+    df_filtered.to_csv(output, index=False)
+    output.seek(0)
+    return send_file(io.BytesIO(output.getvalue().encode()), 
+                     mimetype='text/csv',
+                     as_attachment=True,
+                     download_name='student_allocations.csv')
 
 
 def graph_image():
