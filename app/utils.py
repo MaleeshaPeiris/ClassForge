@@ -143,7 +143,6 @@ def process_datasetfile(df, num_classes, academic_weight,wellbeing_weight):
     
     return data, df
 
-
 def process_csvfile(df, academic_weight,wellbeing_weight):
     scaler = MinMaxScaler()
     all_features = df.loc[:, df.columns != 'student_id']
@@ -179,8 +178,6 @@ def process_csvfile(df, academic_weight,wellbeing_weight):
     data = from_networkx(G)
 
     return data, G 
-
-
 
 def label_students(df, num_classes):
 
@@ -251,6 +248,31 @@ def create_graph(df):
 
     # === Create graph from adjacency matrix ===
     G = nx.from_numpy_array(adj_matrix)
+    # Compute centralities
+    degree_centrality = nx.degree_centrality(G)
+    betweenness = nx.betweenness_centrality(G)
+    eigenvector = nx.eigenvector_centrality(G)
+
+    # Add them to each node as attributes
+    for n in G.nodes():
+        G.nodes[n]['degree_centrality'] = degree_centrality[n]
+        G.nodes[n]['betweenness'] = betweenness[n]
+        G.nodes[n]['eigenvector'] = eigenvector[n]
+
+
+    # Sort nodes by centrality score in descending order
+    sorted_nodes = sorted(eigenvector.items(), key=lambda x: x[1], reverse=True)
+
+    # Calculate top 10% count
+    top_n = max(1, int(0.10 * len(sorted_nodes)))  # at least 1 node
+
+    # Get top 10% influencer nodes
+    top_influencers = [node for node, score in sorted_nodes[:top_n]]
+    print(f"Top {top_n} influencers: {top_influencers}")
+
+    # Mark them in the graph
+    for node in G.nodes():
+        G.nodes[node]['is_influencer'] = node in top_influencers
 
     return G
 
