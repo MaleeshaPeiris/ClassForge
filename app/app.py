@@ -10,7 +10,7 @@ from flask import send_file, url_for
 import networkx as nx
 import matplotlib.cm as cm
 import os
-from pyvis.network import Network
+
 
 
 app = Flask(__name__)
@@ -67,17 +67,19 @@ def allocate_students():
 
     url1 = graph_image()
     url2 = graph_image2()
+    unique_allocated_classes = sorted(int(c) for c in df['allocated_class'].unique())
+    unique_random_allocated_classes = sorted(int(c) for c in df['random_label'].unique())
 
     return jsonify({
         "students": df.to_dict(orient='records'),
         "graph_image_url": url1,
-        "graph_image2_url": url2
+        "graph_image2_url": url2,
+        "unique_classes_allocated": unique_allocated_classes,
+        "unique_classes_random_allocated": unique_random_allocated_classes
     })
 
 
-
-
-@app.route('/interactive_graph')
+""" @app.route('/interactive_graph')
 def interactive_graph():
     global G
     if G is None:
@@ -99,7 +101,12 @@ def interactive_graph():
                 data[key] = bool(val)
 
     # Create a Pyvis network
-    net = Network(height="600px", width="100%", bgcolor="#222222", font_color="white")
+    net = Network('600px', '50%', bgcolor="#222222", font_color="white")
+    # Create a Pyvis network for random allocation
+    net = Network('600px', '50%', bgcolor="#222222", font_color="white")
+
+    # Disable physics (this keeps the nodes from floating around)
+    net.show_buttons(filter_=['physics'])
 
     # Convert NetworkX graph to Pyvis network
     net.from_nx(G)
@@ -115,8 +122,7 @@ def interactive_graph():
     net.save_graph(graph_path)
 
     # Return the path (you can redirect or use this in frontend)
-    return redirect(url_for('static', filename='interactive_graph.html'))
-
+    return redirect(url_for('static', filename='interactive_graph.html')) """
 
 
 def graph_image():
@@ -177,6 +183,48 @@ def graph_image2():
     # Return the URL for the saved image
     image2_url = url_for('static', filename=f'images/{image_filename}', _external=False)
     return image2_url
+
+
+@app.route('/class_graph/<int:class_id>')
+def class_graph(class_id):
+    global G
+    if G is None:
+        return "Graph not available", 400
+
+    response_data = {}
+
+    # Check and create random_label graph
+    nodes_random = [n for n, d in G.nodes(data=True) if d.get('random_label') == class_id]
+    if nodes_random:
+        subG_random = G.subgraph(nodes_random)
+        fig1, ax1 = plt.subplots(figsize=(8, 6))
+        pos_random = nx.spring_layout(subG_random, seed=42)
+        nx.draw(subG_random, pos_random, with_labels=True, node_size=60, edge_color='gray',
+                node_color='skyblue', ax=ax1)
+        image_path_random = f'static/images/class_{class_id}_random_graph.png'
+        plt.savefig(image_path_random)
+        plt.close(fig1)
+        response_data["random_graph_url"] = url_for('static', filename=f'images/class_{class_id}_random_graph.png')
+    else:
+        response_data["random_graph_url"] = None
+
+    # Check and create allocated_class graph
+    nodes_allocated = [n for n, d in G.nodes(data=True) if d.get('allocated_class') == class_id]
+    if nodes_allocated:
+        subG_allocated = G.subgraph(nodes_allocated)
+        fig2, ax2 = plt.subplots(figsize=(8, 6))
+        pos_allocated = nx.spring_layout(subG_allocated, seed=42)
+        nx.draw(subG_allocated, pos_allocated, with_labels=True, node_size=60, edge_color='gray',
+                node_color='lightgreen', ax=ax2)
+        image_path_allocated = f'static/images/class_{class_id}_allocated_graph.png'
+        plt.savefig(image_path_allocated)
+        plt.close(fig2)
+        response_data["allocated_graph_url"] = url_for('static', filename=f'images/class_{class_id}_allocated_graph.png')
+    else:
+        response_data["allocated_graph_url"] = None
+
+    return jsonify(response_data)
+
 
 
 current_model = None
