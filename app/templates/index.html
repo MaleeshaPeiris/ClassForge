@@ -86,6 +86,8 @@ endblock %} {% block content %}
 <!-- 📊 Allocation Result Section -->
 <div class="card p-4 mb-4 fade-in" id="resultDiv" style="display: none">
   <h5 class="mb-3 text-center">📊 Allocation Comparison</h5>
+
+  <!-- Static Graph Images (matplotlib) -->
   <div class="row mb-4 fade-in">
     <div class="col-md-6">
       <img
@@ -105,12 +107,23 @@ endblock %} {% block content %}
     </div>
   </div>
 
+  <!-- Interactive Chart.js Graphs -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <canvas id="chart-optimal" height="300"></canvas>
+    </div>
+    <div class="col-md-6">
+      <canvas id="chart-random" height="300"></canvas>
+    </div>
+  </div>
+
   <h6 class="mb-2 text-center">🧩 Compare By Class</h6>
   <div class="text-center mb-3 fade-in">
     <select class="form-select w-auto mx-auto" id="class-selector">
       <option disabled selected>Select Class</option>
     </select>
   </div>
+
   <div class="row mb-4 fade-in">
     <div class="col-md-6">
       <img

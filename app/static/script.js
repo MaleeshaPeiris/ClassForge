@@ -35,6 +35,65 @@ document.addEventListener("DOMContentLoaded", () => {
       const graph2URL = data.graph_image2_url;
 
       document.getElementById("resultDiv").style.display = "block";
+
+      // 📊 Fetch class counts and draw Chart.js graphs
+      const countsRes = await fetch("/class_counts");
+      const counts = await countsRes.json();
+
+      // Destroy old charts if already rendered
+      if (window.optimalChart) window.optimalChart.destroy();
+      if (window.randomChart) window.randomChart.destroy();
+
+      const ctxOptimal = document
+        .getElementById("chart-optimal")
+        .getContext("2d");
+      window.optimalChart = new Chart(ctxOptimal, {
+        type: "bar",
+        data: {
+          labels: Object.keys(counts.optimal),
+          datasets: [
+            {
+              label: "Optimal Allocation",
+              data: Object.values(counts.optimal),
+              backgroundColor: "#007bff",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: { display: true, text: "Optimal Class Allocation" },
+            tooltip: { mode: "index", intersect: false },
+          },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+
+      const ctxRandom = document
+        .getElementById("chart-random")
+        .getContext("2d");
+      window.randomChart = new Chart(ctxRandom, {
+        type: "bar",
+        data: {
+          labels: Object.keys(counts.random),
+          datasets: [
+            {
+              label: "Random Allocation",
+              data: Object.values(counts.random),
+              backgroundColor: "#28a745",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: { display: true, text: "Random Class Allocation" },
+            tooltip: { mode: "index", intersect: false },
+          },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+
       document.getElementById("progressBar").style.display = "none";
 
       const selector = document.getElementById("class-selector");

@@ -42,6 +42,21 @@ def help():
 def inject_now():
     return {'now': datetime.utcnow}
 
+@app.route('/class_counts')
+def class_counts():
+    global final_df
+    if final_df is None:
+        return jsonify({"error": "No allocation available"}), 400
+
+    optimal_counts = final_df['optimal_class'].value_counts().sort_index().to_dict()
+    random_counts = final_df['random_label'].value_counts().sort_index().to_dict()
+
+    return jsonify({
+        "optimal": optimal_counts,
+        "random": random_counts
+    })
+
+
 
 @app.route('/allocate', methods=['POST'])
 def allocate_students():
