@@ -5,8 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
 
     const formData = new FormData(form);
-
-    // Append slider values
     const academicWeight = document.getElementById("academic-weight").value;
     const wellbeingWeight = document.getElementById("wellbeing-weight").value;
     const numClasses = document.querySelector(
@@ -17,6 +15,9 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.set("wellbeing_weight", wellbeingWeight);
     formData.set("num_classes", numClasses);
 
+    // 🚀 Show progress bar before sending request
+    document.getElementById("progressBar").style.display = "block";
+
     try {
       const response = await fetch("/allocate", {
         method: "POST",
@@ -25,20 +26,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!response.ok) {
         alert("Error occurred while allocating students.");
+        document.getElementById("progressBar").style.display = "none";
         return;
       }
 
       const data = await response.json();
-      const students = data.students;
       const graph1URL = data.graph_image_url;
       const graph2URL = data.graph_image2_url;
 
-      // 🔥 SHOW the result section
+      // ✅ Show result section
       document.getElementById("resultDiv").style.display = "block";
 
-      // Populate class dropdown
+      // 🔁 Hide progress bar after response
+      document.getElementById("progressBar").style.display = "none";
+
+      // 📋 Populate class dropdown
       const selector = document.getElementById("class-selector");
-      selector.innerHTML = ""; // Clear old options
+      selector.innerHTML = "";
       data.unique_classes_random_allocated.forEach((classId) => {
         const option = document.createElement("option");
         option.value = classId;
@@ -46,15 +50,15 @@ document.addEventListener("DOMContentLoaded", () => {
         selector.appendChild(option);
       });
 
-      // Load graphs
+      // 🖼️ Load comparison graphs
       document.getElementById(
         "graph-image"
-      ).src = `${graph1URL}?t=${new Date().getTime()}`;
+      ).src = `${graph1URL}?t=${Date.now()}`;
       document.getElementById(
         "graph-image2"
-      ).src = `${graph2URL}?t=${new Date().getTime()}`;
+      ).src = `${graph2URL}?t=${Date.now()}`;
 
-      // Class selector logic
+      // 🧩 Load per-class graphs on selector change
       document
         .getElementById("class-selector")
         .addEventListener("change", async function () {
@@ -64,14 +68,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
           document.getElementById("class-graph-image").src = `${
             data.allocated_graph_url
-          }?t=${new Date().getTime()}`;
+          }?t=${Date.now()}`;
           document.getElementById("class-graph-image-random").src = `${
             data.random_graph_url
-          }?t=${new Date().getTime()}`;
+          }?t=${Date.now()}`;
         });
     } catch (error) {
       console.error("Allocation failed:", error);
       alert("Unexpected error occurred.");
+      document.getElementById("progressBar").style.display = "none";
     }
   };
+
+  // 🖼️ Smooth fade-in when images load
+  document.querySelectorAll("img").forEach((img) => {
+    if (img.complete) {
+      img.classList.add("loaded");
+    } else {
+      img.addEventListener("load", () => {
+        img.classList.add("loaded");
+      });
+    }
+  });
 });

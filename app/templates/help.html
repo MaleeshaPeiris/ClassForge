@@ -1,13 +1,14 @@
 {% extends "base.html" %} {% block title %}Help - ClassForge{% endblock %} {%
 block content %}
-<div class="mb-5">
-  <h1 class="text-center mb-4">🆘 Need Help?</h1>
-  <p class="lead text-center">
-    Here are answers to common questions to help you use ClassForge effectively.
+
+<div class="mb-5 text-center fade-in">
+  <h1 class="display-5 mb-3">🆘 Help & FAQ</h1>
+  <p class="lead">
+    Answers to common questions about using ClassForge effectively.
   </p>
 </div>
 
-<div class="accordion" id="faqAccordion">
+<div class="accordion fade-in" id="faqAccordion">
   <div class="accordion-item">
     <h2 class="accordion-header" id="faq1">
       <button
@@ -15,8 +16,9 @@ block content %}
         type="button"
         data-bs-toggle="collapse"
         data-bs-target="#collapse1"
+        aria-expanded="true"
       >
-        How do I upload my student CSV file?
+        📁 How do I upload my student CSV file?
       </button>
     </h2>
     <div
@@ -25,9 +27,9 @@ block content %}
       data-bs-parent="#faqAccordion"
     >
       <div class="accordion-body">
-        Navigate to the Student Allocator page, click “Choose File,” upload your
-        CSV, then set the number of classes and sliders before clicking
-        “Allocate Students.”
+        Navigate to the Student Allocator page, upload your CSV file, set the
+        desired number of classes, adjust the sliders, and click
+        <strong>Allocate Students</strong>.
       </div>
     </div>
   </div>
@@ -40,7 +42,7 @@ block content %}
         data-bs-toggle="collapse"
         data-bs-target="#collapse2"
       >
-        What do the sliders mean?
+        🎚️ What do the sliders mean?
       </button>
     </h2>
     <div
@@ -49,9 +51,9 @@ block content %}
       data-bs-parent="#faqAccordion"
     >
       <div class="accordion-body">
-        The sliders allow you to give weight to Academic or Well-being factors
-        when forming student groups. More weight to Academic = more academic
-        grouping.
+        The <strong>Academic Weight</strong> slider controls the importance of
+        academic performance. The <strong>Well-being Weight</strong> controls
+        the social distribution. Together they must always total 100%.
       </div>
     </div>
   </div>
@@ -64,7 +66,7 @@ block content %}
         data-bs-toggle="collapse"
         data-bs-target="#collapse3"
       >
-        How do I compare the results?
+        📊 How do I compare allocation results?
       </button>
     </h2>
     <div
@@ -73,10 +75,12 @@ block content %}
       data-bs-parent="#faqAccordion"
     >
       <div class="accordion-body">
-        After allocation, view the graph comparison section. You can also pick a
-        class number from the dropdown to see per-class allocation differences.
+        After allocation, two graphs will be displayed: one using ClassForge AI
+        and one using random distribution. You can also compare by class using
+        the dropdown menu.
       </div>
     </div>
   </div>
 </div>
+
 {% endblock %}

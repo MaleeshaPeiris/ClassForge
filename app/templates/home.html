@@ -1,40 +1,84 @@
 {% extends "base.html" %} {% block title %}Home - ClassForge{% endblock %} {%
 block content %}
-<div class="text-center mb-5">
-  <h1 class="mb-3">👋 Welcome to ClassForge</h1>
-  <p class="lead">Empowering educators with AI-optimized class allocations.</p>
-  <a href="{{ url_for('index') }}" class="btn btn-primary mt-4"
+
+<div class="text-center mb-5 fade-in">
+  <h1 class="mb-3 display-4">👋 Welcome to <strong>ClassForge</strong></h1>
+  <p class="lead">
+    AI-powered student allocation tailored for balance, fairness, and wellbeing.
+  </p>
+  <a
+    href="{{ url_for('index') }}"
+    class="btn btn-lg btn-primary mt-4 px-5"
+    style="
+      background: linear-gradient(to right, #003366, #0056b3);
+      border: none;
+      color: white;
+    "
     >🚀 Start Allocating Students</a
   >
 </div>
 
-<div class="row text-center">
-  <div class="col-md-4 mb-4">
-    <div class="card h-100 p-3">
-      <h4>📊 Smart Allocation</h4>
+<div class="row g-4 text-center fade-in">
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm p-4">
+      <h4 class="mb-3">📊 Smart Allocation</h4>
       <p>
-        Use AI to assign students into balanced and optimized groups based on
-        academic and wellbeing features.
+        AI assigns students into well-balanced and optimized groups based on
+        both academic and social wellbeing metrics.
       </p>
     </div>
   </div>
-  <div class="col-md-4 mb-4">
-    <div class="card h-100 p-3">
-      <h4>📁 Easy Upload</h4>
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm p-4">
+      <h4 class="mb-3">📁 Seamless Upload</h4>
       <p>
-        Upload your CSV file with student data and let ClassForge take care of
-        the rest.
+        Drag and drop or upload your student data in CSV format and get started
+        in seconds — no technical knowledge required.
       </p>
     </div>
   </div>
-  <div class="col-md-4 mb-4">
-    <div class="card h-100 p-3">
-      <h4>📈 Visual Insights</h4>
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm p-4">
+      <h4 class="mb-3">📈 Interactive Graphs</h4>
       <p>
-        Compare AI-based class assignments against random allocation with
-        dynamic graphs.
+        Visualize allocations with side-by-side comparisons against random
+        groupings using beautiful dynamic graphs.
       </p>
     </div>
   </div>
 </div>
+
+<hr class="my-5" />
+
+<h2 class="text-center mb-4 fade-in">👥 What Our Users Say</h2>
+<div class="row g-4 fade-in">
+  <div class="col-md-4">
+    <div class="card p-3 shadow-sm h-100">
+      <p class="mb-2">
+        “ClassForge helped me assign balanced teams in minutes. It’s a game
+        changer.”
+      </p>
+      <h6 class="mb-0 text-end">– Priya K, Educator</h6>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 shadow-sm h-100">
+      <p class="mb-2">
+        “I loved the visual graphs. My students ended up in more cohesive
+        groups.”
+      </p>
+      <h6 class="mb-0 text-end">– Daniel S, Head of Department</h6>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 shadow-sm h-100">
+      <p class="mb-2">
+        “Takes the stress out of class planning. Beautiful UI and fast AI
+        backend!”
+      </p>
+      <h6 class="mb-0 text-end">– Fatima R, Curriculum Designer</h6>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

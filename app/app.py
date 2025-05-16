@@ -11,6 +11,7 @@ import io
 import networkx as nx
 import matplotlib.cm as cm
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 G = None  # Global variable to store the graph
@@ -36,6 +37,10 @@ def about():
 @app.route('/help')
 def help():
     return render_template('help.html', active_page='help')
+
+@app.context_processor
+def inject_now():
+    return {'now': datetime.utcnow}
 
 
 @app.route('/allocate', methods=['POST'])
