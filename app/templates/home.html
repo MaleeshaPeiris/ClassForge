@@ -1,0 +1,40 @@
+{% extends "base.html" %} {% block title %}Home - ClassForge{% endblock %} {%
+block content %}
+<div class="text-center mb-5">
+  <h1 class="mb-3">👋 Welcome to ClassForge</h1>
+  <p class="lead">Empowering educators with AI-optimized class allocations.</p>
+  <a href="{{ url_for('index') }}" class="btn btn-primary mt-4"
+    >🚀 Start Allocating Students</a
+  >
+</div>
+
+<div class="row text-center">
+  <div class="col-md-4 mb-4">
+    <div class="card h-100 p-3">
+      <h4>📊 Smart Allocation</h4>
+      <p>
+        Use AI to assign students into balanced and optimized groups based on
+        academic and wellbeing features.
+      </p>
+    </div>
+  </div>
+  <div class="col-md-4 mb-4">
+    <div class="card h-100 p-3">
+      <h4>📁 Easy Upload</h4>
+      <p>
+        Upload your CSV file with student data and let ClassForge take care of
+        the rest.
+      </p>
+    </div>
+  </div>
+  <div class="col-md-4 mb-4">
+    <div class="card h-100 p-3">
+      <h4>📈 Visual Insights</h4>
+      <p>
+        Compare AI-based class assignments against random allocation with
+        dynamic graphs.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

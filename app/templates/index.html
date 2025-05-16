@@ -1,125 +1,135 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Student Allocation System</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+{% extends "base.html" %} {% block title %}ClassForge - Student Allocator{%
+endblock %} {% block content %}
+<h2 class="text-center mb-5">🎓 Student Allocator</h2>
 
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f4f6f9;
-        }
-        .card {
-            border-radius: 16px;
-            box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
-        }  
+<!-- 📂 Upload Section -->
+<div class="card p-4 mb-4">
+  <h5 class="mb-3">📂 Upload Student CSV</h5>
+  <form id="upload-form" method="post" enctype="multipart/form-data">
+    <input type="file" class="form-control mb-3" name="file" required />
 
-        .student-list { margin-top: 20px; }
-        .graph-container {
-            display: flex;
-            flex-direction: row;        /* Aligns items horizontally */
-            justify-content: center;    /* Center align if container is wider */
-            gap: 20px;                  /* Space between the images */
-            flex-wrap: wrap;            /* Allows wrapping on smaller screens */
-            margin-top: 20px;
-        }
+    <label class="form-label">🏫 Number of Classes</label>
+    <input
+      type="number"
+      class="form-control w-50 mb-3"
+      name="num_classes"
+      value="3"
+      min="1"
+      required
+    />
 
-        .graph-container img {
-            max-width: 45%;
-            height: auto;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+    <label class="form-label"
+      >📘 Academic Weight: <span id="academic-label">100%</span></label
+    >
+    <input
+      type="range"
+      class="form-range mb-3"
+      id="academic-weight"
+      name="academic_weight"
+      min="0"
+      max="100"
+      step="20"
+      value="100"
+      oninput="adjustWeights('academic')"
+    />
 
-</head>
-<body>
-<div class="container py-5">
+    <label class="form-label"
+      >💖 Well-being Weight: <span id="wellbeing-label">0%</span></label
+    >
+    <input
+      type="range"
+      class="form-range mb-3"
+      id="wellbeing-weight"
+      name="wellbeing_weight"
+      min="0"
+      max="100"
+      step="20"
+      value="0"
+      oninput="adjustWeights('wellbeing')"
+    />
 
-    <h2 class="text-center mb-4">Class Forge - Student Allocator</h2>
-    <h3 class="text-left mb-1">Upload Student Data</h3>
-
-    <form id="upload-form" method="post" enctype="multipart/form-data">
-        <input type="file" class="form-control w-75" name="file" required><br><br>
-
-        <h3 class="text-left mb-1">Enter required number of classes</h3>
-
-        <label class="form-label">Number of Classes:</label>
-        <input type="number" class="form-control w-25" name="num_classes" value="3" min="1" required><br><br>
-
-        <h3 class="text-left mb-1">Select the Academic Weight and Well-being Weight</h3>
-
-        <label class="form-label">Academic Feature Percentage: <span id="academic-label">100%</span></label><br>
-        <input type="range" class="form-range" id="academic-weight" name="academic_weight" min="0" max="100" step="20" value="100" oninput="adjustWeights('academic')"><br><br>
-        
-        <label class="form-label">Well-being Feature Percentage: <span id="wellbeing-label">0%</span></label><br>
-        <input type="range" class="form-range" id="wellbeing-weight" name="wellbeing_weight" min="0" max="100" step="20" value="0" oninput="adjustWeights('wellbeing')"><br><br>
-
-        <button id="allocateBtn" class="btn btn-primary mt-3">Allocate</button> <br><br>
-    </form>
-    <div id="resultDiv" class="mt-4" > 
-        <div id="output">
-            <h3 class="text-center mb-4">Full Class Graph Representation - Our Model Vs random Allocation</h3>
-            <div class="graph-container">
-                <img id="graph-image" src=""   />
-                <img id="graph-image2" src="" />
-            </div>
-        </div><br>
-        <h3 class="text-center mb-4">Class Comparison</h3>
-    
-        <select class="form-select w-auto" id="class-selector">
-            <option disabled selected>Select Class Number</option>
-        </select>
-        <div class="graph-container">
-            <img id="class-graph-image" src=""  />
-            <img id="class-graph-image-random" src=""  />
-        </div> 
-        <div class="text-center mt-4">
-            <a href="/download_csv" class="btn btn-primary mt-3" download>
-                Download Student Data
-            </a>
-        </div>         
-    </div>
-
-
-
-    <script>
-        function updateLabel(type) {
-            const slider = document.getElementById(`${type}-weight`);
-            const label = document.getElementById(`${type}-label`);
-            label.innerText = `${slider.value}%`;
-        }
-    </script>
-    <script>
-        function adjustWeights(changed) {
-            const academicSlider = document.getElementById('academic-weight');
-            const wellbeingSlider = document.getElementById('wellbeing-weight');
-            const academicLabel = document.getElementById('academic-label');
-            const wellbeingLabel = document.getElementById('wellbeing-label');
-        
-            let academicVal = parseInt(academicSlider.value);
-            let wellbeingVal = parseInt(wellbeingSlider.value);
-        
-            if (changed === 'academic') {
-                academicVal = Math.min(100, academicVal);
-                wellbeingVal = 100 - academicVal;
-                wellbeingSlider.value = wellbeingVal;
-            } else {
-                wellbeingVal = Math.min(100, wellbeingVal);
-                academicVal = 100 - wellbeingVal;
-                academicSlider.value = academicVal;
-            }
-        
-            academicLabel.textContent = academicVal + '%';
-            wellbeingLabel.textContent = wellbeingVal + '%';
-        }
-        </script>
+    <button type="submit" class="btn btn-primary w-100 mt-3">
+      🚀 Allocate Students
+    </button>
+  </form>
 </div>
-<script src="/static/script.js"></script>
 
-</body>
-</html>
+<!-- 📊 Allocation Result Section -->
+<div class="card p-4 mb-4" id="resultDiv" style="display: none">
+  <h5 class="mb-3 text-center">📊 Allocation Comparison</h5>
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <img
+        id="graph-image"
+        src=""
+        class="img-fluid"
+        alt="Model Allocation Graph"
+      />
+    </div>
+    <div class="col-md-6">
+      <img
+        id="graph-image2"
+        src=""
+        class="img-fluid"
+        alt="Random Allocation Graph"
+      />
+    </div>
+  </div>
+
+  <h6 class="mb-2 text-center">🧩 Compare By Class</h6>
+  <div class="text-center mb-3">
+    <select class="form-select w-auto mx-auto" id="class-selector">
+      <option disabled selected>Select Class</option>
+    </select>
+  </div>
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <img
+        id="class-graph-image"
+        src=""
+        class="img-fluid"
+        alt="Class Allocation"
+      />
+    </div>
+    <div class="col-md-6">
+      <img
+        id="class-graph-image-random"
+        src=""
+        class="img-fluid"
+        alt="Class Random"
+      />
+    </div>
+  </div>
+
+  <div class="text-center">
+    <a href="/download_csv" class="btn btn-success" download
+      >⬇️ Download Final CSV</a
+    >
+  </div>
+</div>
+
+<!-- Scripts -->
+<script>
+  function adjustWeights(changed) {
+    const academicSlider = document.getElementById("academic-weight");
+    const wellbeingSlider = document.getElementById("wellbeing-weight");
+    const academicLabel = document.getElementById("academic-label");
+    const wellbeingLabel = document.getElementById("wellbeing-label");
+
+    let academicVal = parseInt(academicSlider.value);
+    let wellbeingVal = parseInt(wellbeingSlider.value);
+
+    if (changed === "academic") {
+      wellbeingVal = 100 - academicVal;
+      wellbeingSlider.value = wellbeingVal;
+    } else {
+      academicVal = 100 - wellbeingVal;
+      academicSlider.value = academicVal;
+    }
+
+    academicLabel.textContent = academicVal + "%";
+    wellbeingLabel.textContent = wellbeingVal + "%";
+  }
+</script>
+<script src="/static/script.js"></script>
+{% endblock %}

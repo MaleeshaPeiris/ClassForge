@@ -1,0 +1,82 @@
+{% extends "base.html" %} {% block title %}Help - ClassForge{% endblock %} {%
+block content %}
+<div class="mb-5">
+  <h1 class="text-center mb-4">🆘 Need Help?</h1>
+  <p class="lead text-center">
+    Here are answers to common questions to help you use ClassForge effectively.
+  </p>
+</div>
+
+<div class="accordion" id="faqAccordion">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="faq1">
+      <button
+        class="accordion-button"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#collapse1"
+      >
+        How do I upload my student CSV file?
+      </button>
+    </h2>
+    <div
+      id="collapse1"
+      class="accordion-collapse collapse show"
+      data-bs-parent="#faqAccordion"
+    >
+      <div class="accordion-body">
+        Navigate to the Student Allocator page, click “Choose File,” upload your
+        CSV, then set the number of classes and sliders before clicking
+        “Allocate Students.”
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="faq2">
+      <button
+        class="accordion-button collapsed"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#collapse2"
+      >
+        What do the sliders mean?
+      </button>
+    </h2>
+    <div
+      id="collapse2"
+      class="accordion-collapse collapse"
+      data-bs-parent="#faqAccordion"
+    >
+      <div class="accordion-body">
+        The sliders allow you to give weight to Academic or Well-being factors
+        when forming student groups. More weight to Academic = more academic
+        grouping.
+      </div>
+    </div>
+  </div>
+
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="faq3">
+      <button
+        class="accordion-button collapsed"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#collapse3"
+      >
+        How do I compare the results?
+      </button>
+    </h2>
+    <div
+      id="collapse3"
+      class="accordion-collapse collapse"
+      data-bs-parent="#faqAccordion"
+    >
+      <div class="accordion-body">
+        After allocation, view the graph comparison section. You can also pick a
+        class number from the dropdown to see per-class allocation differences.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
