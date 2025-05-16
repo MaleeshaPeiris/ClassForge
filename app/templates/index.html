@@ -8,6 +8,14 @@ endblock %} {% block content %}
   <form id="upload-form" method="post" enctype="multipart/form-data">
     <input type="file" class="form-control mb-3" name="file" required />
 
+    <!-- 🔍 CSV Preview Section -->
+    <div id="csv-preview" class="mt-4" style="display: none">
+      <h6>🔍 CSV Preview (First 5 Rows)</h6>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered" id="csv-table"></table>
+      </div>
+    </div>
+
     <label class="form-label">🏫 Number of Classes</label>
     <input
       type="number"

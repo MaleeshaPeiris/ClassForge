@@ -34,13 +34,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const graph1URL = data.graph_image_url;
       const graph2URL = data.graph_image2_url;
 
-      // ✅ Show result section
       document.getElementById("resultDiv").style.display = "block";
-
-      // 🔁 Hide progress bar after response
       document.getElementById("progressBar").style.display = "none";
 
-      // 📋 Populate class dropdown
       const selector = document.getElementById("class-selector");
       selector.innerHTML = "";
       data.unique_classes_random_allocated.forEach((classId) => {
@@ -50,7 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
         selector.appendChild(option);
       });
 
-      // 🖼️ Load comparison graphs
       document.getElementById(
         "graph-image"
       ).src = `${graph1URL}?t=${Date.now()}`;
@@ -58,7 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
         "graph-image2"
       ).src = `${graph2URL}?t=${Date.now()}`;
 
-      // 🧩 Load per-class graphs on selector change
       document
         .getElementById("class-selector")
         .addEventListener("change", async function () {
@@ -90,4 +84,33 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   });
+
+  // 🧾 CSV Preview Logic
+  document
+    .querySelector('input[type="file"]')
+    .addEventListener("change", function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const text = event.target.result;
+        const lines = text.split("\n").slice(0, 6); // First row + 5 rows
+        const table = document.getElementById("csv-table");
+        table.innerHTML = "";
+
+        lines.forEach((line, i) => {
+          const row = document.createElement("tr");
+          line.split(",").forEach((cell) => {
+            const cellElem = document.createElement(i === 0 ? "th" : "td");
+            cellElem.textContent = cell;
+            row.appendChild(cellElem);
+          });
+          table.appendChild(row);
+        });
+
+        document.getElementById("csv-preview").style.display = "block";
+      };
+      reader.readAsText(file);
+    });
 });
