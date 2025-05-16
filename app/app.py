@@ -64,10 +64,12 @@ def allocate_students():
     df = optimize_class_allocation(df, num_classes)
     final_df = df.copy()
     for i in range(len(df)):
+        G.nodes[i]['student_id'] = df.loc[i, 'student_id']
         G.nodes[i]['random_label'] = df.loc[i, 'random_label']
         G.nodes[i]['allocated_class'] = df.loc[i, 'allocated_class']
         G.nodes[i]['optimal_class'] = df.loc[i, 'optimal_class']
         G.nodes[i]['gender_code'] = df.loc[i, 'gender_code']
+        G.nodes[i]['bullying_experience_flag'] = df.loc[i, 'bullying_experience_flag']
 
     url1 = graph_image()
     url2 = graph_image2()
@@ -187,6 +189,8 @@ def class_graph(class_id):
 
             # Border color: red = influencer, white = isolated, black = normal
             if data.get('is_influencer'):
+                border = 'green'
+            elif data.get('is_isolated_at_risk'):
                 border = 'red'
             else:
                 border = (0, 0, 0, 0) 
@@ -202,9 +206,10 @@ def class_graph(class_id):
         legend_elements.append(mpatches.Patch(color='pink', label='Female'))
 
         # Example: Borders for influencers
-        legend_elements.append(mlines.Line2D([], [], color='red', marker='o', linestyle='None',
+        legend_elements.append(mlines.Line2D([], [], color='green', marker='o', linestyle='None',
                                             markersize=10, label='Influencer', markerfacecolor='white', markeredgewidth=2))
-
+        legend_elements.append(mlines.Line2D([], [], color='red', marker='o', linestyle='None',
+                                            markersize=10, label='At risk of isolation', markerfacecolor='white', markeredgewidth=2)) 
 
         # Add the legend
         ax1.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=2, frameon=False)
@@ -239,6 +244,8 @@ def class_graph(class_id):
 
             # Border color: red = influencer, white = isolated, black = normal
             if data.get('is_influencer'):
+                border = 'green'
+            elif data.get('is_isolated_at_risk'):
                 border = 'red'
             else:
                 border = (0, 0, 0, 0) 
@@ -255,8 +262,10 @@ def class_graph(class_id):
         legend_elements.append(mpatches.Patch(color='pink', label='Female'))
 
         # Example: Borders for influencers
-        legend_elements.append(mlines.Line2D([], [], color='red', marker='o', linestyle='None',
+        legend_elements.append(mlines.Line2D([], [], color='green', marker='o', linestyle='None',
                                             markersize=10, label='Influencer', markerfacecolor='white', markeredgewidth=2)) 
+        legend_elements.append(mlines.Line2D([], [], color='red', marker='o', linestyle='None',
+                                            markersize=10, label='At risk of isolation', markerfacecolor='white', markeredgewidth=2)) 
 
 
         # Add the legend
