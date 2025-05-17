@@ -26,9 +26,9 @@ endblock %} {% block content %}
       required
     />
 
-    <label class="form-label"
-      >📘 Academic Weight: <span id="academic-label">100%</span></label
-    >
+    <label class="form-label">
+      📘 Academic Weight: <span id="academic-label">100%</span>
+    </label>
     <input
       type="range"
       class="form-range mb-3"
@@ -41,9 +41,9 @@ endblock %} {% block content %}
       oninput="adjustWeights('academic')"
     />
 
-    <label class="form-label"
-      >💖 Well-being Weight: <span id="wellbeing-label">0%</span></label
-    >
+    <label class="form-label">
+      💖 Well-being Weight: <span id="wellbeing-label">0%</span>
+    </label>
     <input
       type="range"
       class="form-range mb-3"
@@ -87,24 +87,19 @@ endblock %} {% block content %}
 <div class="card p-4 mb-4 fade-in" id="resultDiv" style="display: none">
   <h5 class="mb-3 text-center">📊 Allocation Comparison</h5>
 
-  <!-- Static Graph Images (matplotlib) -->
-  <div class="row mb-4 fade-in">
-    <div class="col-md-6">
-      <img
-        id="graph-image"
-        src=""
-        class="img-fluid"
-        alt="Model Allocation Graph"
-      />
-    </div>
-    <div class="col-md-6">
-      <img
-        id="graph-image2"
-        src=""
-        class="img-fluid"
-        alt="Random Allocation Graph"
-      />
-    </div>
+  <!-- 🎛️ Class Filter Buttons -->
+  <div
+    id="class-buttons"
+    class="text-center mb-3 fade-in"
+    style="display: none"
+  >
+    <div class="btn-group flex-wrap" role="group" id="button-container"></div>
+  </div>
+
+  <!-- 🌐 Interactive 3D Force Graph -->
+  <div class="mb-5">
+    <h6 class="text-center mb-3">🌐 3D Class Network (Optimal Allocation)</h6>
+    <div id="graph-3d" class="graph-flex"></div>
   </div>
 
   <!-- Interactive Chart.js Graphs -->

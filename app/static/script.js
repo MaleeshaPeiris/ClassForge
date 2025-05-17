@@ -15,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
     formData.set("wellbeing_weight", wellbeingWeight);
     formData.set("num_classes", numClasses);
 
-    // 🚀 Show progress bar before sending request
     document.getElementById("progressBar").style.display = "block";
 
     try {
@@ -31,16 +30,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const data = await response.json();
+      const students = data.students;
       const graph1URL = data.graph_image_url;
       const graph2URL = data.graph_image2_url;
 
       document.getElementById("resultDiv").style.display = "block";
 
-      // 📊 Fetch class counts and draw Chart.js graphs
       const countsRes = await fetch("/class_counts");
       const counts = await countsRes.json();
 
-      // Destroy old charts if already rendered
       if (window.optimalChart) window.optimalChart.destroy();
       if (window.randomChart) window.randomChart.destroy();
 
@@ -94,8 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
         },
       });
 
-      document.getElementById("progressBar").style.display = "none";
-
       const selector = document.getElementById("class-selector");
       selector.innerHTML = "";
       data.unique_classes_random_allocated.forEach((classId) => {
@@ -104,13 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
         option.textContent = `Class ${classId}`;
         selector.appendChild(option);
       });
-
-      document.getElementById(
-        "graph-image"
-      ).src = `${graph1URL}?t=${Date.now()}`;
-      document.getElementById(
-        "graph-image2"
-      ).src = `${graph2URL}?t=${Date.now()}`;
 
       document
         .getElementById("class-selector")
@@ -126,6 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
             data.random_graph_url
           }?t=${Date.now()}`;
         });
+
+      render3DGraph(students);
+
+      document.getElementById("progressBar").style.display = "none";
     } catch (error) {
       console.error("Allocation failed:", error);
       alert("Unexpected error occurred.");
@@ -133,18 +126,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // 🖼️ Smooth fade-in when images load
-  document.querySelectorAll("img").forEach((img) => {
-    if (img.complete) {
-      img.classList.add("loaded");
-    } else {
-      img.addEventListener("load", () => {
-        img.classList.add("loaded");
-      });
-    }
-  });
-
-  // 🧾 CSV Preview Logic
   document
     .querySelector('input[type="file"]')
     .addEventListener("change", function (e) {
@@ -154,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const reader = new FileReader();
       reader.onload = function (event) {
         const text = event.target.result;
-        const lines = text.split("\n").slice(0, 6); // First row + 5 rows
+        const lines = text.split("\n").slice(0, 6);
         const table = document.getElementById("csv-table");
         table.innerHTML = "";
 
@@ -172,4 +153,131 @@ document.addEventListener("DOMContentLoaded", () => {
       };
       reader.readAsText(file);
     });
+
+  document.querySelectorAll("img").forEach((img) => {
+    if (img.complete) {
+      img.classList.add("loaded");
+    } else {
+      img.addEventListener("load", () => {
+        img.classList.add("loaded");
+      });
+    }
+  });
 });
+
+// 🌐 3D Graph with Class Filter Buttons and Smart Layout
+function render3DGraph(students) {
+  const container = document.getElementById("graph-3d");
+  const buttonContainer = document.getElementById("button-container");
+  const classButtonsDiv = document.getElementById("class-buttons");
+
+  if (!container) return;
+  container.innerHTML = "";
+  buttonContainer.innerHTML = "";
+  classButtonsDiv.style.display = "block";
+
+  const colorScale = d3.scaleOrdinal(d3.schemeTableau10);
+
+  const nodes = students.map((s, i) => ({
+    id: i,
+    label: s.student_id,
+    class: s.optimal_class,
+    color: colorScale(s.optimal_class),
+  }));
+
+  const links = [];
+  for (let i = 0; i < nodes.length - 1; i++) {
+    links.push({ source: i, target: i + 1 });
+  }
+
+  const fullData = { nodes, links };
+
+  function filterGraph(classId) {
+    const visibleNodes =
+      classId === "all" ? nodes : nodes.filter((n) => n.class == classId);
+
+    const nodeMap = new Map(visibleNodes.map((n) => [n.id, n]));
+    let visibleLinks = [];
+
+    if (classId === "all") {
+      for (let i = 0; i < visibleNodes.length - 1; i++) {
+        visibleLinks.push({
+          source: visibleNodes[i],
+          target: visibleNodes[i + 1],
+        });
+      }
+    } else {
+      for (let i = 0; i < visibleNodes.length; i++) {
+        for (let j = i + 1; j < visibleNodes.length; j++) {
+          visibleLinks.push({
+            source: visibleNodes[i],
+            target: visibleNodes[j],
+          });
+        }
+      }
+    }
+
+    window.FORCE_GRAPH_INSTANCE.graphData({
+      nodes: visibleNodes,
+      links: visibleLinks,
+    });
+
+    visibleNodes.forEach((n) => {
+      n.z = (Math.random() - 0.5) * 300;
+    });
+
+    setTimeout(() => {
+      window.FORCE_GRAPH_INSTANCE.zoomToFit(800, 100);
+    }, 400);
+  }
+
+  const uniqueClasses = [...new Set(nodes.map((n) => n.class))].sort();
+
+  const btnAll = document.createElement("button");
+  btnAll.className = "btn btn-outline-primary m-1";
+  btnAll.textContent = "All";
+  btnAll.onclick = () => filterGraph("all");
+  buttonContainer.appendChild(btnAll);
+
+  uniqueClasses.forEach((cls) => {
+    const btn = document.createElement("button");
+    btn.className = "btn btn-outline-secondary m-1";
+    btn.textContent = `Class ${cls}`;
+    btn.onclick = () => filterGraph(cls);
+    buttonContainer.appendChild(btn);
+  });
+
+  const Graph = ForceGraph3D()(container)
+    .graphData(fullData)
+    .nodeLabel((d) => `🎓 ${d.label}<br>🏫 Class: ${d.class}`)
+    .nodeAutoColorBy("class")
+    .linkColor(() => "#404040")
+    .linkOpacity(0.3)
+    .linkWidth(7)
+    .backgroundColor("#FFF")
+    .cooldownTicks(300)
+    .d3Force("link", d3.forceLink().distance(300))
+    .d3Force("center", d3.forceCenter(0, 0, 0))
+    .onEngineStop(() => Graph.zoomToFit(800, 100));
+
+  window.FORCE_GRAPH_INSTANCE = Graph;
+
+  // ✅ Make camera zoom clean
+  Graph.cameraPosition({ x: 0, y: 0, z: 320 }, { x: 0, y: 0, z: 0 }, 2000);
+
+  // ✅ Node rendering
+  Graph.nodeThreeObject((node) => {
+    const geometry = new THREE.SphereGeometry(20, 16, 16);
+    const material = new THREE.MeshBasicMaterial({ color: node.color });
+    return new THREE.Mesh(geometry, material);
+  });
+
+  // ✅ Dynamic resizing
+  const resize = () => {
+    Graph.width(container.clientWidth);
+    Graph.height(container.clientHeight);
+  };
+
+  window.addEventListener("resize", resize);
+  resize(); // trigger once
+}
