@@ -65,7 +65,7 @@ def allocate_students():
     df = optimize_class_allocation(df, num_classes)
     final_df = df.copy()
 
-    # 🔧 Build graph with student_id as node keys
+    # ✅ Step 1: Build the graph using student_id
     G = nx.Graph()
     for _, row in df.iterrows():
         sid = row['student_id']
@@ -76,13 +76,22 @@ def allocate_students():
         G.nodes[sid]['gender_code'] = row['gender_code']
         G.nodes[sid]['is_influencer'] = row.get('is_influencer', False)
 
-    # ✅ Add edges: connect all students within same optimal class
-    class_groups = df.groupby('optimal_class')
-    for _, group in class_groups:
+    # ✅ Step 2: Connect students in the same optimal_class (Graph 1)
+    optimal_groups = df.groupby('optimal_class')
+    for _, group in optimal_groups:
         ids = group['student_id'].tolist()
         for a, b in combinations(ids, 2):
             G.add_edge(a, b)
 
+    # ✅ Step 3: Connect students in the same random_label (Graph 2)
+    random_groups = df.groupby('random_label')
+    for _, group in random_groups:
+        ids = group['student_id'].tolist()
+        for a, b in combinations(ids, 2):
+            if not G.has_edge(a, b):  # prevent duplicate edges
+                G.add_edge(a, b)
+
+    # ✅ Step 4: Graph image URLs
     url1 = graph_image()
     url2 = graph_image2()
     unique_allocated_classes = sorted(int(c) for c in df['optimal_class'].unique() if pd.notna(c))
@@ -95,7 +104,6 @@ def allocate_students():
         "unique_classes_allocated": unique_allocated_classes,
         "unique_classes_random_allocated": unique_random_allocated_classes
     })
-
 
 @app.route('/download_csv')
 def download_csv():
