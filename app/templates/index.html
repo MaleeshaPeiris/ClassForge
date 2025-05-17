@@ -1,5 +1,6 @@
 {% extends "base.html" %} {% block title %}ClassForge - Student Allocator{%
 endblock %} {% block content %}
+
 <h2 class="text-center mb-5 fade-in">🎓 Student Allocator</h2>
 
 <!-- 📂 Upload Section -->
@@ -102,7 +103,7 @@ endblock %} {% block content %}
     <div id="graph-3d" class="graph-flex"></div>
   </div>
 
-  <!-- Interactive Chart.js Graphs -->
+  <!-- 📊 Bar Charts -->
   <div class="row mb-4">
     <div class="col-md-6">
       <canvas id="chart-optimal" height="300"></canvas>
@@ -112,6 +113,7 @@ endblock %} {% block content %}
     </div>
   </div>
 
+  <!-- 🧩 Compare By Class -->
   <h6 class="mb-2 text-center">🧩 Compare By Class</h6>
   <div class="text-center mb-3 fade-in">
     <select class="form-select w-auto mx-auto" id="class-selector">
@@ -138,6 +140,32 @@ endblock %} {% block content %}
     </div>
   </div>
 
+  <!-- Inside the Allocation Result section -->
+  <!-- 👥 Student Table -->
+  <div class="card p-3 fade-in" id="class-details-table" style="display: none">
+    <h6 class="mb-3 text-center">
+      👥 Students Optimally Allocated to Class
+      <span id="class-id-label">?</span>
+    </h6>
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Optimal Class</th>
+            <th>Random Class</th>
+            <th>Bullying Experience</th>
+            <th>Gender</th>
+          </tr>
+        </thead>
+        <tbody id="class-details-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <br />
+
+  <!-- 📥 Download CSV -->
   <div class="text-center fade-in">
     <a href="/download_csv" class="btn btn-success" download>
       ⬇️ Download Final CSV
@@ -145,7 +173,7 @@ endblock %} {% block content %}
   </div>
 </div>
 
-<!-- Scripts -->
+<!-- ⚙️ Script: Adjust Slider Weights -->
 <script>
   function adjustWeights(changed) {
     const academicSlider = document.getElementById("academic-weight");
@@ -168,5 +196,8 @@ endblock %} {% block content %}
     wellbeingLabel.textContent = wellbeingVal + "%";
   }
 </script>
+
+<!-- 📦 Main App Script -->
 <script src="/static/script.js"></script>
+
 {% endblock %}

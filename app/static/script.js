@@ -5,15 +5,18 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
 
     const formData = new FormData(form);
-    const academicWeight = document.getElementById("academic-weight").value;
-    const wellbeingWeight = document.getElementById("wellbeing-weight").value;
-    const numClasses = document.querySelector(
-      'input[name="num_classes"]'
-    ).value;
-
-    formData.set("academic_weight", academicWeight);
-    formData.set("wellbeing_weight", wellbeingWeight);
-    formData.set("num_classes", numClasses);
+    formData.set(
+      "academic_weight",
+      document.getElementById("academic-weight").value
+    );
+    formData.set(
+      "wellbeing_weight",
+      document.getElementById("wellbeing-weight").value
+    );
+    formData.set(
+      "num_classes",
+      document.querySelector('input[name="num_classes"]').value
+    );
 
     document.getElementById("progressBar").style.display = "block";
 
@@ -22,78 +25,70 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         body: formData,
       });
-
-      if (!response.ok) {
-        alert("Error occurred while allocating students.");
-        document.getElementById("progressBar").style.display = "none";
-        return;
-      }
+      if (!response.ok) throw new Error("Allocation failed");
 
       const data = await response.json();
       const students = data.students;
-      const graph1URL = data.graph_image_url;
-      const graph2URL = data.graph_image2_url;
 
       document.getElementById("resultDiv").style.display = "block";
 
-      const countsRes = await fetch("/class_counts");
-      const counts = await countsRes.json();
+      const counts = await (await fetch("/class_counts")).json();
 
       if (window.optimalChart) window.optimalChart.destroy();
       if (window.randomChart) window.randomChart.destroy();
 
-      const ctxOptimal = document
-        .getElementById("chart-optimal")
-        .getContext("2d");
-      window.optimalChart = new Chart(ctxOptimal, {
-        type: "bar",
-        data: {
-          labels: Object.keys(counts.optimal),
-          datasets: [
-            {
-              label: "Optimal Allocation",
-              data: Object.values(counts.optimal),
-              backgroundColor: "#007bff",
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            title: { display: true, text: "Optimal Class Allocation" },
-            tooltip: { mode: "index", intersect: false },
+      window.optimalChart = new Chart(
+        document.getElementById("chart-optimal").getContext("2d"),
+        {
+          type: "bar",
+          data: {
+            labels: Object.keys(counts.optimal),
+            datasets: [
+              {
+                label: "Optimal Allocation",
+                data: Object.values(counts.optimal),
+                backgroundColor: "#007bff",
+              },
+            ],
           },
-          scales: { y: { beginAtZero: true } },
-        },
-      });
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: "Optimal Class Allocation" },
+              tooltip: { mode: "index", intersect: false },
+            },
+            scales: { y: { beginAtZero: true } },
+          },
+        }
+      );
 
-      const ctxRandom = document
-        .getElementById("chart-random")
-        .getContext("2d");
-      window.randomChart = new Chart(ctxRandom, {
-        type: "bar",
-        data: {
-          labels: Object.keys(counts.random),
-          datasets: [
-            {
-              label: "Random Allocation",
-              data: Object.values(counts.random),
-              backgroundColor: "#28a745",
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            title: { display: true, text: "Random Class Allocation" },
-            tooltip: { mode: "index", intersect: false },
+      window.randomChart = new Chart(
+        document.getElementById("chart-random").getContext("2d"),
+        {
+          type: "bar",
+          data: {
+            labels: Object.keys(counts.random),
+            datasets: [
+              {
+                label: "Random Allocation",
+                data: Object.values(counts.random),
+                backgroundColor: "#28a745",
+              },
+            ],
           },
-          scales: { y: { beginAtZero: true } },
-        },
-      });
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: "Random Class Allocation" },
+              tooltip: { mode: "index", intersect: false },
+            },
+            scales: { y: { beginAtZero: true } },
+          },
+        }
+      );
 
       const selector = document.getElementById("class-selector");
-      selector.innerHTML = "";
+      selector.innerHTML = "<option disabled selected>Select Class</option>";
       data.unique_classes_random_allocated.forEach((classId) => {
         const option = document.createElement("option");
         option.value = classId;
@@ -101,26 +96,43 @@ document.addEventListener("DOMContentLoaded", () => {
         selector.appendChild(option);
       });
 
-      document
-        .getElementById("class-selector")
-        .addEventListener("change", async function () {
-          const classId = this.value;
-          const response = await fetch(`/class_graph/${classId}`);
-          const data = await response.json();
+      selector.addEventListener("change", async function () {
+        const classId = this.value;
 
-          document.getElementById("class-graph-image").src = `${
-            data.allocated_graph_url
-          }?t=${Date.now()}`;
-          document.getElementById("class-graph-image-random").src = `${
-            data.random_graph_url
-          }?t=${Date.now()}`;
+        const graphData = await (await fetch(`/class_graph/${classId}`)).json();
+        document.getElementById("class-graph-image").src = `${
+          graphData.allocated_graph_url
+        }?t=${Date.now()}`;
+        document.getElementById("class-graph-image-random").src = `${
+          graphData.random_graph_url
+        }?t=${Date.now()}`;
+        document.getElementById("class-id-label").textContent = classId;
+
+        const tableData = await (
+          await fetch(`/class_students/${classId}`)
+        ).json();
+        const tbody = document.getElementById("class-details-body");
+        tbody.innerHTML = "";
+
+        tableData.students.forEach((s) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${s.student_id}</td>
+            <td>${s.optimal_class}</td>
+            <td>${s.random_class}</td>
+            <td>${s.bully}</td>
+            <td>${s.gender}</td>
+          `;
+          tbody.appendChild(row);
         });
 
-      render3DGraph(students);
+        document.getElementById("class-details-table").style.display = "block";
+      });
 
+      render3DGraph(students);
       document.getElementById("progressBar").style.display = "none";
     } catch (error) {
-      console.error("Allocation failed:", error);
+      console.error(error);
       alert("Unexpected error occurred.");
       document.getElementById("progressBar").style.display = "none";
     }
@@ -158,9 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (img.complete) {
       img.classList.add("loaded");
     } else {
-      img.addEventListener("load", () => {
-        img.classList.add("loaded");
-      });
+      img.addEventListener("load", () => img.classList.add("loaded"));
     }
   });
 });
@@ -262,22 +272,19 @@ function render3DGraph(students) {
 
   window.FORCE_GRAPH_INSTANCE = Graph;
 
-  // ✅ Make camera zoom clean
   Graph.cameraPosition({ x: 0, y: 0, z: 320 }, { x: 0, y: 0, z: 0 }, 2000);
 
-  // ✅ Node rendering
   Graph.nodeThreeObject((node) => {
     const geometry = new THREE.SphereGeometry(20, 16, 16);
     const material = new THREE.MeshBasicMaterial({ color: node.color });
     return new THREE.Mesh(geometry, material);
   });
 
-  // ✅ Dynamic resizing
   const resize = () => {
     Graph.width(container.clientWidth);
     Graph.height(container.clientHeight);
   };
 
   window.addEventListener("resize", resize);
-  resize(); // trigger once
+  resize();
 }

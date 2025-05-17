@@ -1,8 +1,7 @@
-from flask import Flask, request, render_template, jsonify, redirect, send_file, url_for
+from flask import Flask, request, render_template, jsonify, send_file, url_for
 import pandas as pd
 import torch
 from utils import process_csvfile, train_model_from_csv, GAT, optimize_class_allocation
-from sklearn.cluster import KMeans
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -14,26 +13,22 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
-G = None  # Global variable to store the graph
-final_df = None  # Global variable to store the final DataFrame
+G = None
+final_df = None
 current_model = None
 
-# Main page (Student Allocator)
 @app.route('/')
 def index():
     return render_template('index.html', active_page='allocator')
 
-# Home page
 @app.route('/home')
 def home():
     return render_template('home.html', active_page='home')
 
-# About page
 @app.route('/about')
 def about():
     return render_template('about.html', active_page='about')
 
-# Help page
 @app.route('/help')
 def help():
     return render_template('help.html', active_page='help')
@@ -42,6 +37,7 @@ def help():
 def inject_now():
     return {'now': datetime.utcnow}
 
+from itertools import combinations
 
 @app.route('/allocate', methods=['POST'])
 def allocate_students():
@@ -59,8 +55,7 @@ def allocate_students():
     df = pd.read_csv(file)
 
     current_model = train_model_from_csv(train_dataset_df, num_classes, academic_weight, wellbeing_weight)
-
-    data, G = process_csvfile(df, academic_weight, wellbeing_weight)
+    data, _ = process_csvfile(df, academic_weight, wellbeing_weight)
 
     with torch.no_grad():
         out = current_model(data.x, data.edge_index)
@@ -69,11 +64,24 @@ def allocate_students():
 
     df = optimize_class_allocation(df, num_classes)
     final_df = df.copy()
-    for i in range(len(df)):
-        G.nodes[i]['random_label'] = df.loc[i, 'random_label']
-        G.nodes[i]['allocated_class'] = df.loc[i, 'allocated_class']
-        G.nodes[i]['optimal_class'] = df.loc[i, 'optimal_class']
-        G.nodes[i]['gender_code'] = df.loc[i, 'gender_code']
+
+    # 🔧 Build graph with student_id as node keys
+    G = nx.Graph()
+    for _, row in df.iterrows():
+        sid = row['student_id']
+        G.add_node(sid)
+        G.nodes[sid]['random_label'] = row['random_label']
+        G.nodes[sid]['allocated_class'] = row['allocated_class']
+        G.nodes[sid]['optimal_class'] = row['optimal_class']
+        G.nodes[sid]['gender_code'] = row['gender_code']
+        G.nodes[sid]['is_influencer'] = row.get('is_influencer', False)
+
+    # ✅ Add edges: connect all students within same optimal class
+    class_groups = df.groupby('optimal_class')
+    for _, group in class_groups:
+        ids = group['student_id'].tolist()
+        for a, b in combinations(ids, 2):
+            G.add_edge(a, b)
 
     url1 = graph_image()
     url2 = graph_image2()
@@ -100,7 +108,6 @@ def download_csv():
     output.seek(0)
     return send_file(io.BytesIO(output.getvalue().encode()), mimetype='text/csv', as_attachment=True, download_name='student_allocations.csv')
 
-
 def graph_image():
     global G
     if G is None:
@@ -115,7 +122,7 @@ def graph_image():
 
     fig, ax = plt.subplots(figsize=(10, 8))
     pos = nx.spring_layout(G, seed=42)
-    nx.draw(G, pos, with_labels=False, node_size=45, node_color=color_map, edge_color='gray', ax=ax)
+    nx.draw(G, pos, with_labels=True, node_size=45, node_color=color_map, edge_color='gray', ax=ax)
 
     image_path = os.path.join("static", "images", "graph_image.png")
     os.makedirs(os.path.dirname(image_path), exist_ok=True)
@@ -123,7 +130,6 @@ def graph_image():
     plt.close(fig)
 
     return url_for('static', filename='images/graph_image.png')
-
 
 def graph_image2():
     global G
@@ -139,7 +145,7 @@ def graph_image2():
 
     fig, ax = plt.subplots(figsize=(10, 8))
     pos = nx.spring_layout(G, seed=42)
-    nx.draw(G, pos, with_labels=False, node_size=45, node_color=color_map, edge_color='gray', ax=ax)
+    nx.draw(G, pos, with_labels=True, node_size=45, node_color=color_map, edge_color='gray', ax=ax)
 
     image_path = os.path.join("static", "images", "graph2_image.png")
     os.makedirs(os.path.dirname(image_path), exist_ok=True)
@@ -147,7 +153,6 @@ def graph_image2():
     plt.close(fig)
 
     return url_for('static', filename='images/graph2_image.png')
-
 
 @app.route('/class_graph/<int:class_id>')
 def class_graph(class_id):
@@ -157,7 +162,7 @@ def class_graph(class_id):
 
     response_data = {}
 
-    # Random Graph
+    # Random
     nodes_random = [n for n, d in G.nodes(data=True) if d.get('random_label') == class_id]
     if nodes_random:
         subG_random = G.subgraph(nodes_random)
@@ -187,7 +192,7 @@ def class_graph(class_id):
     else:
         response_data["random_graph_url"] = None
 
-    # Allocated Graph
+    # Optimal
     nodes_allocated = [n for n, d in G.nodes(data=True) if d.get('optimal_class') == class_id]
     if nodes_allocated:
         subG_allocated = G.subgraph(nodes_allocated)
@@ -233,6 +238,24 @@ def class_counts():
         "random": random_counts
     })
 
+@app.route('/class_students/<int:class_id>')
+def class_students(class_id):
+    global final_df
+    if final_df is None:
+        return jsonify({"error": "No data"}), 400
+
+    filtered = final_df[final_df['optimal_class'] == class_id]
+    student_data = []
+    for _, row in filtered.iterrows():
+        student_data.append({
+            "student_id": row.get("student_id", "N/A"),
+            "optimal_class": row.get("optimal_class", "N/A"),
+            "random_class": row.get("random_label", "N/A"),
+            "bully": "Yes" if row.get("is_bully", False) else "No",
+            "gender": "Male" if row.get("gender_code") == 0 else "Female" if row.get("gender_code") == 1 else "Other"
+        })
+
+    return jsonify({"students": student_data})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
