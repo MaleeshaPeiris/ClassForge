@@ -14,6 +14,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 G = None
+G_old = None
 final_df = None
 current_model = None
 
@@ -41,7 +42,7 @@ from itertools import combinations
 
 @app.route('/allocate', methods=['POST'])
 def allocate_students():
-    global G, final_df, current_model
+    global G, final_df, current_model,G_old
 
     if 'file' not in request.files:
         return "No file uploaded", 400
@@ -55,7 +56,7 @@ def allocate_students():
     df = pd.read_csv(file)
 
     current_model = train_model_from_csv(train_dataset_df, num_classes, academic_weight, wellbeing_weight)
-    data, _ = process_csvfile(df, academic_weight, wellbeing_weight)
+    data,G = process_csvfile(df, academic_weight, wellbeing_weight)
 
     with torch.no_grad():
         out = current_model(data.x, data.edge_index)
@@ -65,31 +66,13 @@ def allocate_students():
     df = optimize_class_allocation(df, num_classes)
     final_df = df.copy()
 
-    # ✅ Step 1: Build the graph using student_id
-    G = nx.Graph()
-    for _, row in df.iterrows():
-        sid = row['student_id']
-        G.add_node(sid)
-        G.nodes[sid]['random_label'] = row['random_label']
-        G.nodes[sid]['allocated_class'] = row['allocated_class']
-        G.nodes[sid]['optimal_class'] = row['optimal_class']
-        G.nodes[sid]['gender_code'] = row['gender_code']
-        G.nodes[sid]['is_influencer'] = row.get('is_influencer', False)
-
-    # ✅ Step 2: Connect students in the same optimal_class (Graph 1)
-    optimal_groups = df.groupby('optimal_class')
-    for _, group in optimal_groups:
-        ids = group['student_id'].tolist()
-        for a, b in combinations(ids, 2):
-            G.add_edge(a, b)
-
-    # ✅ Step 3: Connect students in the same random_label (Graph 2)
-    random_groups = df.groupby('random_label')
-    for _, group in random_groups:
-        ids = group['student_id'].tolist()
-        for a, b in combinations(ids, 2):
-            if not G.has_edge(a, b):  # prevent duplicate edges
-                G.add_edge(a, b)
+    for i in range(len(df)):
+        G.nodes[i]['student_id'] = df.loc[i, 'student_id']
+        G.nodes[i]['random_label'] = df.loc[i, 'random_label']
+        G.nodes[i]['allocated_class'] = df.loc[i, 'allocated_class']
+        G.nodes[i]['optimal_class'] = df.loc[i, 'optimal_class']
+        G.nodes[i]['gender_code'] = df.loc[i, 'gender_code']
+        G.nodes[i]['bullying_experience_flag'] = df.loc[i, 'bullying_experience_flag']
 
     # ✅ Step 4: Graph image URLs
     url1 = graph_image()
@@ -210,14 +193,14 @@ def class_graph(class_id):
             data = subG_allocated.nodes[n]
             color = 'lightblue' if data.get('gender_code') == 0 else 'lightpink' if data.get('gender_code') == 1 else 'gray'
             node_colors.append(color)
-            node_border_colors.append('red' if data.get('is_influencer') else (0, 0, 0, 0))
+            node_border_colors.append('green' if data.get('is_influencer') else (0, 0, 0, 0))
 
         fig2, ax2 = plt.subplots(figsize=(8, 6))
         pos_allocated = nx.spring_layout(subG_allocated, seed=42)
         legend_elements = [
             mpatches.Patch(color='skyblue', label='Male'),
             mpatches.Patch(color='pink', label='Female'),
-            mlines.Line2D([], [], color='red', marker='o', linestyle='None', markersize=10, label='Influencer', markerfacecolor='white', markeredgewidth=2)
+            mlines.Line2D([], [], color='green', marker='o', linestyle='None', markersize=10, label='Influencer', markerfacecolor='white', markeredgewidth=2)
         ]
         ax2.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=2, frameon=False)
         nx.draw(subG_allocated, pos_allocated, with_labels=True, node_size=60, edge_color='gray',

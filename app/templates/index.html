@@ -1,10 +1,12 @@
 {% extends "base.html" %} {% block title %}ClassForge - Student Allocator{%
 endblock %} {% block content %}
 
-<h2 class="text-center mb-5 fade-in">🎓 Student Allocator</h2>
+
 
 <!-- 📂 Upload Section -->
 <div class="card p-4 mb-4 fade-in">
+
+  <h2 class="text-center mb-5 fade-in">🎓 Student Allocator</h2>
   <h5 class="mb-3">📂 Upload Student CSV</h5>
   <form id="upload-form" method="post" enctype="multipart/form-data">
     <input type="file" class="form-control mb-3" name="file" required />
@@ -28,33 +30,34 @@ endblock %} {% block content %}
     />
 
     <label class="form-label">
-      📘 Academic Weight: <span id="academic-label">100%</span>
+      Academic well-being: <span id="academic-label">100%</span>
     </label>
     <input
       type="range"
-      class="form-range mb-3"
+      class="w-100"
       id="academic-weight"
       name="academic_weight"
       min="0"
       max="100"
       step="20"
       value="100"
-      oninput="adjustWeights('academic')"
-    />
+      thumb-color="#0056b3"
+      oninput="adjustWeights('academic');"
+    /><br/>
 
     <label class="form-label">
-      💖 Well-being Weight: <span id="wellbeing-label">0%</span>
+      Mental well-being: <span id="wellbeing-label">0%</span>
     </label>
     <input
       type="range"
-      class="form-range mb-3"
+      class="w-100"
       id="wellbeing-weight"
       name="wellbeing_weight"
       min="0"
       max="100"
       step="20"
       value="0"
-      oninput="adjustWeights('wellbeing')"
+      oninput="adjustWeights('wellbeing');"
     />
 
     <button
@@ -196,6 +199,7 @@ endblock %} {% block content %}
     wellbeingLabel.textContent = wellbeingVal + "%";
   }
 </script>
+
 
 <!-- 📦 Main App Script -->
 <script src="/static/script.js"></script>

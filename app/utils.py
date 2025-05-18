@@ -261,21 +261,25 @@ def create_graph(df):
 
 
     # Sort nodes by centrality score in descending order
-    sorted_nodes = sorted(eigenvector.items(), key=lambda x: x[1], reverse=True)
+    sorted_nodes = sorted(degree_centrality.items(), key=lambda x: x[1], reverse=True)
 
     # Calculate top 10% count
     top_n = max(1, int(0.10 * len(sorted_nodes)))  # at least 1 node
 
     # Get top 10% influencer nodes
     top_influencers = [node for node, score in sorted_nodes[:top_n]]
+    isolated_at_risk = [node for node, score in sorted_nodes[-top_n:]]
 
     # Mark them in the graph
     for node in G.nodes():
         G.nodes[node]['is_influencer'] = node in top_influencers
+        df['is_influencer'] = node in top_influencers
+        G.nodes[node]['is_isolated_at_risk'] = node in isolated_at_risk 
+        df['is_isolated_at_risk'] = node in isolated_at_risk
 
     return G
 
-def optimize_class_allocation(df, num_class, max_gender_dev=2, max_bully_dev=1):
+def optimize_class_allocation(df, num_class, max_gender_dev=2, max_dev=1):
 
     n_students = len(df)
 
@@ -286,10 +290,12 @@ def optimize_class_allocation(df, num_class, max_gender_dev=2, max_bully_dev=1):
 
     gender = df['gender_code'].to_numpy()
     bully = df['bullying_experience_flag'].to_numpy()
+    influencer = df['is_influencer'].to_numpy()
 
     students_per_class = n_students // num_class
     total_males = np.sum(gender)
     total_bullies = np.sum(bully)
+    total_influencers = np.sum(influencer)
 
     prob = pulp.LpProblem("ClassAllocation", pulp.LpMinimize)
 
@@ -313,12 +319,19 @@ def optimize_class_allocation(df, num_class, max_gender_dev=2, max_bully_dev=1):
         prob += male_count >= ideal_males - max_gender_dev
         prob += male_count <= ideal_males + max_gender_dev
 
-    # Constraint: bully distribution balance
+        # Constraint: bully distribution balance
     ideal_bullies = total_bullies / num_class
     for j in range(num_class):
         bully_count = pulp.lpSum(bully[i] * x[i][j] for i in range(n_students))
-        prob += bully_count >= ideal_bullies - max_bully_dev
-        prob += bully_count <= ideal_bullies + max_bully_dev
+        prob += bully_count >= ideal_bullies - max_dev
+        prob += bully_count <= ideal_bullies + max_dev
+
+
+    ideal_influencers = total_influencers / num_class
+    for j in range(num_class):
+        influencer_count = pulp.lpSum(influencer[i] * x[i][j] for i in range(n_students))
+        prob += influencer_count >= ideal_influencers - max_dev
+        prob += influencer_count <= ideal_influencers + max_dev
 
     # Solve the problem
     prob.solve()
