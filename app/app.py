@@ -75,6 +75,7 @@ def allocate_students():
         G.nodes[sid]['optimal_class'] = row['optimal_class']
         G.nodes[sid]['gender_code'] = row['gender_code']
         G.nodes[sid]['is_influencer'] = row.get('is_influencer', False)
+        G.nodes[sid]['bullying_experience_flag'] = row.get('bullying_experience_flag')
 
     # ✅ Step 2: Connect students in the same optimal_class (Graph 1)
     optimal_groups = df.groupby('optimal_class')
@@ -259,7 +260,7 @@ def class_students(class_id):
             "student_id": row.get("student_id", "N/A"),
             "optimal_class": row.get("optimal_class", "N/A"),
             "random_class": row.get("random_label", "N/A"),
-            "bully": "Yes" if row.get("is_bully", False) else "No",
+            "bully": "Yes" if row.get("bullying_experience_flag") == 1 else "No",
             "gender": "Male" if row.get("gender_code") == 0 else "Female" if row.get("gender_code") == 1 else "Other"
         })
 

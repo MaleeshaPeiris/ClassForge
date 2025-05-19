@@ -193,6 +193,7 @@ function render3DGraph(students) {
     label: s.student_id,
     class: s.optimal_class,
     color: colorScale(s.optimal_class),
+    bully: s.bullying_experience_flag,
   }));
 
   const links = [];
@@ -275,10 +276,33 @@ function render3DGraph(students) {
   Graph.cameraPosition({ x: 0, y: 0, z: 320 }, { x: 0, y: 0, z: 0 }, 2000);
 
   Graph.nodeThreeObject((node) => {
-    const geometry = new THREE.SphereGeometry(20, 16, 16);
-    const material = new THREE.MeshBasicMaterial({ color: node.color });
-    return new THREE.Mesh(geometry, material);
+    const radius = node.bully === 1 ? 30 : 20;
+    const influencerRadius = node.influencer === 1 ? 40 : radius;
+    const color = node.color;
+  
+    // Main inner sphere
+    const geometry = new THREE.SphereGeometry(radius, 16, 16);
+    const material = new THREE.MeshBasicMaterial({ color: color });
+    const mesh = new THREE.Mesh(geometry, material);
+  
+    if (node.bully === 1) {
+      // Create a slightly larger transparent sphere to act as a border
+      const borderGeometry = new THREE.SphereGeometry(radius + 4, 16, 16);
+      const borderMaterial = new THREE.MeshBasicMaterial({
+        color: "#000000", // black border
+        wireframe: true,
+      });
+      const border = new THREE.Mesh(borderGeometry, borderMaterial);
+  
+      const group = new THREE.Group();
+      group.add(mesh);
+      group.add(border);
+      return group;
+    }
+
+    return mesh;
   });
+  
 
   const resize = () => {
     Graph.width(container.clientWidth);
